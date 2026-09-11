@@ -14,6 +14,8 @@ import { salaryRoutes } from "../modules/salary/shell/route";
 import { staticTaxRates } from "../modules/salary/shell/repo";
 import { soeRoutes } from "../modules/soe/shell/route";
 import { buildSoeSource } from "../modules/soe/shell/repo";
+import { macroRoutes } from "../modules/macro/shell/route";
+import { buildMacroSource } from "../modules/macro/shell/repo";
 
 export interface AppDependencies {
   config: AppConfig;
@@ -74,6 +76,12 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   void app.register(soeRoutes, {
     prefix: "/api/soe",
     dependencies: { source: soeSource },
+  });
+
+  const macroSource = buildMacroSource(config);
+  void app.register(macroRoutes, {
+    prefix: "/api/macro",
+    dependencies: { source: macroSource },
   });
 
   return app;

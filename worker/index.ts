@@ -18,6 +18,8 @@ import { staticTaxRates } from "../src/modules/salary/shell/repo";
 import { serializeSalaryBreakdown } from "../src/modules/salary/shell/serialize";
 import { buildSoeSource } from "../src/modules/soe/shell/repo";
 import type { SoeDataSource } from "../src/modules/soe/core/ports";
+import { buildMacroSource } from "../src/modules/macro/shell/repo";
+import type { MacroDataSource } from "../src/modules/macro/core/ports";
 
 type Env = Record<string, string | undefined>;
 
@@ -27,6 +29,7 @@ interface Sources {
   ins: InsDataSource;
   investments: InvestmentsSource;
   soe: SoeDataSource;
+  macro: MacroDataSource;
 }
 
 interface AppVariables {
@@ -40,6 +43,7 @@ function buildSources(config: AppConfig): Sources {
     ins: buildInsSource(config),
     investments: buildInvestmentsSource(config),
     soe: buildSoeSource(config),
+    macro: buildMacroSource(config),
   };
 }
 
@@ -226,6 +230,30 @@ app.get("/api/soe/subsidies", async (c) => {
 
 app.get("/api/soe/listed", async (c) => {
   const result = await c.get("sources").soe.getListed();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/inflation", async (c) => {
+  const result = await c.get("sources").macro.getInflation();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/unemployment", async (c) => {
+  const result = await c.get("sources").macro.getUnemployment();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/fx", async (c) => {
+  const result = await c.get("sources").macro.getFx();
   if (result.isErr()) {
     return errorReply(c, result.error);
   }

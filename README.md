@@ -36,6 +36,9 @@ Aliniat cu `hack-for-facts-eb-server` / `transparenta-eu-ins-loader`:
 | GET    | `/api/soe/companies/:cui`                  | Fișa unei companii (finanțe, salarii, MFin, subvenții)                          |
 | GET    | `/api/soe/subsidies?year=2024\|2025`       | Subvenții locale către companiile de stat                                       |
 | GET    | `/api/soe/listed`                          | Companiile de stat listate la BVB                                               |
+| GET    | `/api/macro/inflation`                     | Inflația anuală IAPC (Eurostat) + ținta BNR                                     |
+| GET    | `/api/macro/unemployment`                  | Rata șomajului BIM, ajustată sezonier (Eurostat)                                |
+| GET    | `/api/macro/fx`                            | Cursul EUR/RON zilnic (BCE)                                                     |
 
 Coduri de eroare: `400 INVALID_INPUT`, `404 NOT_FOUND`, `502 UPSTREAM_UNAVAILABLE`, `500 INTERNAL`.
 

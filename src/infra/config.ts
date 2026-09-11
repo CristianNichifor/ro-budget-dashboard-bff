@@ -13,6 +13,7 @@ export interface AppConfig {
   insLoaderTimeoutMs: number;
   soeBaseUrl: string;
   soeTimeoutMs: number;
+  macroTimeoutMs: number;
 }
 
 const DEFAULT_PORT = 3000;
@@ -40,5 +41,6 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     insLoaderTimeoutMs: Number(env.INS_LOADER_TIMEOUT_MS ?? 3000),
     soeBaseUrl: env.SOE_BASE_URL ?? "https://companiidestat.ro",
     soeTimeoutMs: Number(env.SOE_TIMEOUT_MS ?? 15000),
+    macroTimeoutMs: Number(env.MACRO_TIMEOUT_MS ?? 15000),
   };
 }
