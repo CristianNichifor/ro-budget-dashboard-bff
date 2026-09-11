@@ -76,6 +76,15 @@ Reguli:
 | `hackforfacts`      | P8 ✓   | Client GraphQL cu mapare verificată pe schema upstream: `executionAnalytics` (sumar), `aggregatedLineItems` (destinații), `entityAnalytics` (instituții). Anul se setează prin `HACK_FOR_FACTS_YEAR`. |
 | INS / BNR           | P3/P4  | de adăugat prin porturi noi                                                                                                                                                                           |
 
+## Docker
+
+```bash
+docker build -t ro-budget-dashboard-bff .
+docker run -p 3000:3000 --env-file .env ro-budget-dashboard-bff
+```
+
+Imaginea de runtime conține doar dependențele de producție + `dist/` (entrypoint `node dist/api.js`). CI-ul din `.github/workflows/ci.yml` rulează `pnpm check`, `pnpm build` și build-ul imaginii.
+
 ## Git workflow
 
 Conventional Commits; Husky rulează lint-staged + commitlint.
