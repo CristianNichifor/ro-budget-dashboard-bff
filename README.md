@@ -91,12 +91,23 @@ Caveat-uri constatate pe instanța live:
 
 ## Docker
 
+Stack complet (BFF + frontend, frontend-ul e în repo-ul sibling):
+
+```bash
+cp .env.example .env
+docker compose up -d --build   # http://localhost:8080
+```
+
+sau doar BFF-ul:
+
 ```bash
 docker build -t ro-budget-dashboard-bff .
 docker run -p 3000:3000 --env-file .env ro-budget-dashboard-bff
 ```
 
-Imaginea de runtime conține doar dependențele de producție + `dist/` (entrypoint `node dist/api.js`). CI-ul din `.github/workflows/ci.yml` rulează `pnpm check`, `pnpm build` și build-ul imaginii.
+Imaginea de runtime conține doar dependențele de producție + `dist/` (entrypoint `node dist/api.js`).
+
+CI: `.github/workflows/ci.yml` rulează `pnpm check` + build pe fiecare PR și publică imaginea pe GHCR la push pe `main`/tag-uri `v*`; `.github/workflows/smoke-live.yml` rulează `pnpm smoke:live` săptămânal/manual.
 
 ## Git workflow
 

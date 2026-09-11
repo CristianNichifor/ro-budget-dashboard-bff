@@ -24,7 +24,10 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   });
 
   void app.register(cors, {
-    origin: config.corsOrigin,
+    origin: config.corsOrigin
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0),
   });
 
   void app.register(rateLimit, {

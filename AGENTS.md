@@ -7,6 +7,8 @@ Convenții pentru `ro-budget-dashboard-bff` (aliniate cu hack-for-facts-eb-serve
 - `pnpm dev` — tsx watch (necesită `.env`)
 - `pnpm check` — typecheck + lint + test + format:check
 - `pnpm test` — vitest (unit core + integration via `app.inject`)
+- `pnpm smoke:live` — smoke test împotriva API-ului public transparenta.eu
+- Deploy: `cp .env.example .env && docker compose up -d --build` (stack BFF+frontend, sibling repo). CI publică imaginea pe GHCR la push pe `main`/tag-uri `v*`; smoke-ul live rulează săptămânal/manual.
 
 ## Reguli
 
