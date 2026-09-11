@@ -84,6 +84,7 @@ transparenta.eu rulează deja eb-server-ul public, fără autentificare: `https:
 Caveat-uri constatate pe instanța live:
 
 - **Filtrele noastre trimit `report_type: PRINCIPAL_AGGREGATED`.** Fără el, upstream-ul însumează toate tipurile de raport stocate (principal + secundar + detaliat + angajamente) și fiecare leu apare de 2–3 ori (ex. cheltuieli 2024: 2,05 trn lei cu totul, 878 mld corect). Cu filtrul activ, deficitul %PIB 2024 iese 8,8% — față de 8,65% oficial.
+- **Destinațiile live sunt agregate top-8 + „Alte destinații”** (`buildDestinations`): datasetul upstream are ~116 grupe funcționale, prea dense pentru un tablou lizibil; restul e pliat într-o singură destinație care se poate expanda prin drill-down.
 - **Totalurile rămân „brute”, nu consolidate**: execuțiile la nivel de ordonator principal includ transferurile intra-bugetare, deci cheltuielile (~878 mld) și veniturile (~722 mld) ies peste execuția consolidată oficială (~752 / ~575 mld); deficitul și %PIB coincid fiindcă transferurile se anulează.
 - Introspectarea GraphQL este dezactivată (maparea e verificată pe schema din repo + smoke test); unele valori ale enum-ului `ReportType` din repo dau eroare pe instanța live — live-ul pare în urma repo-ului.
 - Latenta e de ordinul secundelor la prima cerere → `HACK_FOR_FACTS_TIMEOUT_MS` implicit 20000.
@@ -115,7 +116,7 @@ Același nucleu (surse, mapping, Decimal) rulează ca Worker pe Cloudflare — `
 
 ```bash
 pnpm worker:dev      # local: http://localhost:8787
-pnpm worker:deploy   # https://ro-budget-dashboard-bff.cn-webify.workers.dev
+pnpm worker:deploy   # https://api.buget.cristian-nichifor.com
 ```
 
 - Config în `wrangler.toml`: `DATA_SOURCE` (`hackforfacts` live / `static` demo), URL-ul și timeout-urile upstream — editabile și din dashboard-ul Cloudflare.

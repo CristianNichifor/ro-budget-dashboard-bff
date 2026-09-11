@@ -109,8 +109,15 @@ export function buildSummary(
 
 /**
  * Groups line items by functional classification (destination), keeping the
- * top economic classifications as sub-destinations.
+ * top economic classifications as sub-destinations. The upstream dataset
+ * has ~100+ functional groups — too noisy for a readable dashboard — so
+ * only the top N are kept as individual destinations and the rest is folded
+ * into a single "Alte destinații" group.
  */
+export const TOP_DESTINATIONS = 8;
+export const REST_DESTINATION_ID = "rest";
+export const REST_DESTINATION_NAME = "Alte destinații";
+
 export function buildDestinations(
   nodes: AggregatedLineItemNode[]
 ): BudgetDestination[] {
@@ -139,19 +146,49 @@ export function buildDestinations(
     new Decimal(0)
   );
 
-  return [...groups.entries()]
-    .map(([code, group]) => ({
-      id: code,
-      name: group.name,
-      amount: group.amount.toString(),
+  const toDestination = ([code, group]: [
+    string,
+    { name: string; amount: Decimal; subs: BudgetSubDestination[] },
+  ]): BudgetDestination => ({
+    id: code,
+    name: group.name,
+    amount: group.amount.toString(),
+    percentOfTotal: total.isZero()
+      ? "0"
+      : group.amount.div(total).times(100).toDecimalPlaces(1).toString(),
+    subDestinations: group.subs
+      .sort((a, b) => new Decimal(b.amount).cmp(a.amount))
+      .slice(0, MAX_SUB_DESTINATIONS),
+  });
+
+  const sorted = [...groups.entries()].sort((a, b) =>
+    b[1].amount.cmp(a[1].amount)
+  );
+
+  const destinations = sorted.slice(0, TOP_DESTINATIONS).map(toDestination);
+
+  const rest = sorted.slice(TOP_DESTINATIONS);
+  if (rest.length > 0) {
+    const restAmount = rest.reduce(
+      (acc, [, group]) => acc.plus(group.amount),
+      new Decimal(0)
+    );
+    destinations.push({
+      id: REST_DESTINATION_ID,
+      name: REST_DESTINATION_NAME,
+      amount: restAmount.toString(),
       percentOfTotal: total.isZero()
         ? "0"
-        : group.amount.div(total).times(100).toDecimalPlaces(1).toString(),
-      subDestinations: group.subs
-        .sort((a, b) => new Decimal(b.amount).cmp(a.amount))
-        .slice(0, MAX_SUB_DESTINATIONS),
-    }))
-    .sort((a, b) => new Decimal(b.amount).cmp(a.amount));
+        : restAmount.div(total).times(100).toDecimalPlaces(1).toString(),
+      subDestinations: rest.map(([code, group]) => ({
+        id: code,
+        name: group.name,
+        amount: group.amount.toString(),
+      })),
+    });
+  }
+
+  return destinations;
 }
 
 export function buildInstitutions(

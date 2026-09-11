@@ -136,6 +136,36 @@ describe("buildDestinations", () => {
   it("returns an empty list for no line items", () => {
     expect(buildDestinations([])).toEqual([]);
   });
+
+  it("folds groups beyond the top 8 into a rest destination", () => {
+    const many = Array.from({ length: 12 }, (_, index) => ({
+      functional_code: `f${index}`,
+      functional_name: `Funcție ${index}`,
+      economic_code: "10",
+      economic_name: "Salarii",
+      amount: 1000 - index,
+      count: 1,
+    }));
+
+    const destinations = buildDestinations(many);
+
+    expect(destinations).toHaveLength(9);
+    expect(destinations.slice(0, 8).map((entry) => entry.id)).toEqual(
+      Array.from({ length: 8 }, (_, index) => `f${index}`)
+    );
+    expect(destinations[8]).toMatchObject({
+      id: "rest",
+      name: "Alte destinații",
+      amount: "3962",
+      percentOfTotal: "33.2",
+    });
+    expect(destinations[8]?.subDestinations).toHaveLength(4);
+    expect(destinations[8]?.subDestinations?.[0]).toEqual({
+      id: "f8",
+      name: "Funcție 8",
+      amount: "992",
+    });
+  });
 });
 
 const entities: EntityAnalyticsNode[] = [
