@@ -17,15 +17,16 @@ Aliniat cu `hack-for-facts-eb-server` / `transparenta-eu-ins-loader`:
 
 ## Endpoints
 
-| Metodă | Path                                       | Descriere                                        |
-| ------ | ------------------------------------------ | ------------------------------------------------ |
-| GET    | `/health/live`, `/health/ready`            | Probe                                            |
-| GET    | `/api/salary/calculate?gross=9427`         | Calcul povară fiscală (CAS/CASS/impozit/CAM/TVA) |
-| GET    | `/api/budget/summary`                      | Venituri / cheltuieli / deficit                  |
-| GET    | `/api/budget/destinations`                 | Destinații cu sub-destinații (drill-down)        |
-| GET    | `/api/budget/institutions?category=pensii` | Detaliu categorie                                |
-| GET    | `/api/context/monetary`                    | Inflație, salariu real, serviciul datoriei       |
-| GET    | `/api/context/trends?metric=health-budget` | Serii temporale                                  |
+| Metodă | Path                                       | Descriere                                                                       |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| GET    | `/health/live`, `/health/ready`            | Probe                                                                           |
+| GET    | `/api/salary/calculate?gross=9427`         | Calcul povară fiscală (CAS/CASS/impozit/CAM/TVA)                                |
+| GET    | `/api/budget/summary`                      | Venituri / cheltuieli / deficit                                                 |
+| GET    | `/api/budget/destinations`                 | Destinații cu sub-destinații (drill-down)                                       |
+| GET    | `/api/budget/institutions?category=pensii` | Detaliu categorie                                                               |
+| GET    | `/api/context/monetary`                    | Inflație, salariu real, serviciul datoriei                                      |
+| GET    | `/api/context/trends?metric=health-budget` | Serii temporale bugetare                                                        |
+| GET    | `/api/ins/metrics?code=infant-mortality`   | Indicatori INS (mortalitate infantilă, pensionari, pensie medie, paturi spital) |
 
 Coduri de eroare: `400 INVALID_INPUT`, `404 NOT_FOUND`, `502 UPSTREAM_UNAVAILABLE`, `500 INTERNAL`.
 
@@ -39,6 +40,8 @@ pnpm check        # typecheck + lint + test + format:check
 pnpm test         # unit (core) + integration (fastify inject)
 pnpm build        # tsc + tsc-alias → dist/
 pnpm start        # node dist/api.js
+pnpm bnr:update --input export.json  # actualizează seed-ul BNR (trimestrial)
+pnpm bnr:validate                    # validează seed-ul BNR curent
 ```
 
 ## Arhitectura
