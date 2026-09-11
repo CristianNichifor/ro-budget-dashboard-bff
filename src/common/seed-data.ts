@@ -167,3 +167,62 @@ export const SEED_INS_METRICS: InsMetricSeed[] = [
     ],
   },
 ];
+
+/**
+ * DEMO NOTE: county investment allocations (investments program, 2026).
+ * Approximate, for the P6 cartogram — amounts are strings (no-floats rule).
+ */
+export interface CountyInvestmentSeed {
+  county: string;
+  region: string;
+  amount: string;
+}
+
+export const SEED_COUNTY_INVESTMENTS: CountyInvestmentSeed[] = [
+  { county: "Alba", region: "Centru", amount: "300000000" },
+  { county: "Arad", region: "Vest", amount: "600000000" },
+  { county: "Argeș", region: "Sud-Muntenia", amount: "750000000" },
+  { county: "Bacău", region: "Nord-Est", amount: "700000000" },
+  { county: "Bihor", region: "Nord-Vest", amount: "900000000" },
+  { county: "Bistrița-Năsăud", region: "Nord-Vest", amount: "420000000" },
+  { county: "Botoșani", region: "Nord-Est", amount: "380000000" },
+  { county: "Brașov", region: "Centru", amount: "1200000000" },
+  { county: "Brăila", region: "Sud-Est", amount: "360000000" },
+  { county: "Buzău", region: "Sud-Est", amount: "520000000" },
+  { county: "Caraș-Severin", region: "Vest", amount: "310000000" },
+  { county: "Călărași", region: "Sud-Muntenia", amount: "230000000" },
+  { county: "Cluj", region: "Nord-Vest", amount: "1900000000" },
+  { county: "Constanța", region: "Sud-Est", amount: "1500000000" },
+  { county: "Covasna", region: "Centru", amount: "320000000" },
+  { county: "Dâmbovița", region: "Sud-Muntenia", amount: "500000000" },
+  { county: "Dolj", region: "Sud-Vest Oltenia", amount: "1000000000" },
+  { county: "Galați", region: "Sud-Est", amount: "800000000" },
+  { county: "Giurgiu", region: "Sud-Muntenia", amount: "260000000" },
+  { county: "Gorj", region: "Sud-Vest Oltenia", amount: "350000000" },
+  { county: "Harghita", region: "Centru", amount: "340000000" },
+  { county: "Hunedoara", region: "Vest", amount: "560000000" },
+  { county: "Ialomița", region: "Sud-Muntenia", amount: "290000000" },
+  { county: "Iași", region: "Nord-Est", amount: "1400000000" },
+  { county: "Ilfov", region: "București-Ilfov", amount: "650000000" },
+  { county: "Maramureș", region: "Nord-Vest", amount: "580000000" },
+  { county: "Mehedinți", region: "Sud-Vest Oltenia", amount: "240000000" },
+  { county: "Mureș", region: "Centru", amount: "850000000" },
+  { county: "Neamț", region: "Nord-Est", amount: "480000000" },
+  { county: "Olt", region: "Sud-Vest Oltenia", amount: "460000000" },
+  { county: "Prahova", region: "Sud-Muntenia", amount: "1100000000" },
+  { county: "Satu Mare", region: "Nord-Vest", amount: "440000000" },
+  { county: "Sălaj", region: "Nord-Vest", amount: "280000000" },
+  { county: "Sibiu", region: "Centru", amount: "600000000" },
+  { county: "Suceava", region: "Nord-Est", amount: "950000000" },
+  { county: "Teleorman", region: "Sud-Muntenia", amount: "270000000" },
+  { county: "Timiș", region: "Vest", amount: "1600000000" },
+  { county: "Tulcea", region: "Sud-Est", amount: "250000000" },
+  { county: "Vaslui", region: "Nord-Est", amount: "400000000" },
+  { county: "Vâlcea", region: "Sud-Vest Oltenia", amount: "540000000" },
+  { county: "Vrancea", region: "Sud-Est", amount: "300000000" },
+  {
+    county: "Municipiul București",
+    region: "București-Ilfov",
+    amount: "4200000000",
+  },
+];
