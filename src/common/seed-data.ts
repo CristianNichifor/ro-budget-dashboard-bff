@@ -4,11 +4,24 @@ import type {
   InflationPoint,
   YearAmount,
 } from "./types";
+import bnrData from "../data/bnr-inflation.json";
+import { bnrDataSchema } from "../data/bnrDataSchema";
 
 /**
  * DEMO seeds, mirroring the frontend's static data. Phase P3/P4 replaces
  * them via the hackforfacts source (or INS/BNR integrations).
+ *
+ * The BNR monetary context lives in src/data/bnr-inflation.json and is
+ * validated against bnrDataSchema on import (fail fast). Update it with
+ * `pnpm bnr:update --input <export.json>`; validate with `pnpm bnr:validate`.
  */
+const parsedBnrData = bnrDataSchema.parse(bnrData);
+
+export const SEED_INFLATION_SERIES: InflationPoint[] = parsedBnrData.series;
+
+export const SEED_INFLATION_TARGET = parsedBnrData.inflationTarget;
+
+export const SEED_DEBT = parsedBnrData.debt;
 
 export const SEED_BUDGET_SUMMARY: BudgetSummary = {
   year: 2026,
@@ -83,23 +96,6 @@ export const SEED_HEALTH_BUDGET_TREND: YearAmount[] = [
   { year: 2025, amount: "26140000000" },
   { year: 2026, amount: "22780000000" },
 ];
-
-export const SEED_INFLATION_SERIES: InflationPoint[] = [
-  { year: 2021, cpiPercent: 5.1, avgNetSalary: 3416 },
-  { year: 2022, cpiPercent: 13.8, avgNetSalary: 3907 },
-  { year: 2023, cpiPercent: 10.4, avgNetSalary: 4564 },
-  { year: 2024, cpiPercent: 5.9, avgNetSalary: 5062 },
-  { year: 2025, cpiPercent: 7.2, avgNetSalary: 5168 },
-  { year: 2026, cpiPercent: 9.69, avgNetSalary: 5539 },
-];
-
-export const SEED_INFLATION_TARGET = 2.5;
-
-export const SEED_DEBT = {
-  total: "883000000000",
-  interestPayment: "59407395000",
-  averageRate: 6.8,
-};
 
 export interface InsMetricPointSeed {
   year: number;
