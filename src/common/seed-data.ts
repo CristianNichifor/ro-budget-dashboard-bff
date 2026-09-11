@@ -4,7 +4,7 @@ import type {
   InflationPoint,
   YearAmount,
 } from "./types";
-import bnrData from "../data/bnr-inflation.json";
+import bnrData from "../data/bnr-inflation.json" with { type: "json" };
 import { bnrDataSchema } from "../data/bnrDataSchema";
 
 /**
