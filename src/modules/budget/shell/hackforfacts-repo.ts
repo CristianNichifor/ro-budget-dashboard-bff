@@ -2,72 +2,162 @@ import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 import type { AppConfig } from "../../../infra/config";
 import type { AppError } from "../../../common/errors";
+import { upstreamUnavailable } from "../../../common/errors";
 import type { BudgetDestination, BudgetSummary } from "../../../common/types";
 import type { BudgetDataSource, BudgetInstitutions } from "../core/ports";
+import {
+  buildDestinations,
+  buildInstitutions,
+  buildSummary,
+} from "../core/analytics-mapping";
 
 /**
- * Best-effort client for hack-for-facts-eb-server (GraphQL-first, Fastify 5).
+ * GraphQL client for hack-for-facts-eb-server (transparenta.eu server).
  *
- * NOTE (P2): the GraphQL field mapping below is written against the server
- * README's documented query categories (executionAnalytics,
- * aggregatedLineItems, datasets). It must be verified against the live
- * schema before DATA_SOURCE=hackforfacts is used in production.
+ * Field mapping verified against the upstream schemas:
+ * - executionAnalytics(inputs: [AnalyticsInput!]!) -> [AnalyticsSeries!]!
+ * - aggregatedLineItems(filter, limit, offset) -> AggregatedLineItemConnection!
+ * - entityAnalytics(filter, sort, limit, offset) -> EntityAnalyticsConnection!
+ *
+ * The queried year comes from HACK_FOR_FACTS_YEAR (the live dataset lags the
+ * demo's 2026 seed). Amounts arrive as GraphQL Float and become Decimal
+ * strings at this boundary — the no-floats rule applies to arithmetic.
  */
-
-const GRAPHQL_SUMMARY_QUERY = `
-  query DashboardSummary {
-    executionAnalytics {
-      revenue
-      expenditure
-    }
-  }
-`;
 
 const GraphQLResponseSchema = z.object({
   data: z.record(z.string(), z.unknown()).nullable().optional(),
   errors: z.array(z.object({ message: z.string() })).optional(),
 });
 
+const ExecutionAnalyticsSchema = z.object({
+  executionAnalytics: z.array(
+    z.object({
+      seriesId: z.string(),
+      data: z.array(z.object({ x: z.string(), y: z.number() })),
+    })
+  ),
+});
+
+const AggregatedLineItemsSchema = z.object({
+  aggregatedLineItems: z.object({
+    nodes: z.array(
+      z.object({
+        functional_code: z.string(),
+        functional_name: z.string(),
+        economic_code: z.string(),
+        economic_name: z.string(),
+        amount: z.number(),
+        count: z.number(),
+      })
+    ),
+  }),
+});
+
+const EntityAnalyticsSchema = z.object({
+  entityAnalytics: z.object({
+    nodes: z.array(
+      z.object({
+        entity_cui: z.string(),
+        entity_name: z.string(),
+        amount: z.number(),
+      })
+    ),
+  }),
+});
+
+const SUMMARY_QUERY = /* GraphQL */ `
+  query DashboardSummary($inputs: [AnalyticsInput!]!) {
+    executionAnalytics(inputs: $inputs) {
+      seriesId
+      data {
+        x
+        y
+      }
+    }
+  }
+`;
+
+const DESTINATIONS_QUERY = /* GraphQL */ `
+  query BudgetDestinations($filter: AnalyticsFilterInput!, $limit: Int!) {
+    aggregatedLineItems(filter: $filter, limit: $limit) {
+      nodes {
+        functional_code
+        functional_name
+        economic_code
+        economic_name
+        amount
+        count
+      }
+    }
+  }
+`;
+
+const INSTITUTIONS_QUERY = /* GraphQL */ `
+  query CategoryInstitutions($filter: AnalyticsFilterInput!, $limit: Int!) {
+    entityAnalytics(filter: $filter, limit: $limit) {
+      nodes {
+        entity_cui
+        entity_name
+        amount
+      }
+    }
+  }
+`;
+
+const INSTITUTIONS_LIMIT = 50;
+const DESTINATIONS_LIMIT = 500;
+
+interface ReportPeriod {
+  type: "YEAR";
+  selection: { interval: { start: string; end: string } };
+}
+
+function reportPeriod(year: string): ReportPeriod {
+  return {
+    type: "YEAR",
+    selection: { interval: { start: year, end: year } },
+  };
+}
+
 async function postGraphQL(
   config: AppConfig,
-  query: string
+  query: string,
+  variables: Record<string, unknown>
 ): Promise<Result<unknown, AppError>> {
   try {
     const response = await fetch(`${config.hackForFactsBaseUrl}/graphql`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, variables }),
       signal: AbortSignal.timeout(config.hackForFactsTimeoutMs),
     });
 
     if (!response.ok) {
-      return err({
-        code: "UPSTREAM_UNAVAILABLE",
-        message: `hack-for-facts responded with ${response.status}`,
-      });
+      return err(
+        upstreamUnavailable(`hack-for-facts responded with ${response.status}`)
+      );
     }
 
     const parsed = GraphQLResponseSchema.safeParse(await response.json());
     if (!parsed.success) {
-      return err({
-        code: "UPSTREAM_UNAVAILABLE",
-        message: "unexpected GraphQL response shape",
-      });
+      return err(upstreamUnavailable("unexpected GraphQL response shape"));
     }
 
     if (parsed.data.errors !== undefined && parsed.data.errors.length > 0) {
-      return err({
-        code: "UPSTREAM_UNAVAILABLE",
-        message: parsed.data.errors.map((item) => item.message).join("; "),
-      });
+      return err(
+        upstreamUnavailable(
+          parsed.data.errors.map((item) => item.message).join("; ")
+        )
+      );
+    }
+
+    if (parsed.data.data === undefined || parsed.data.data === null) {
+      return err(upstreamUnavailable("GraphQL response carried no data"));
     }
 
     return ok(parsed.data.data);
   } catch {
-    return err({
-      code: "UPSTREAM_UNAVAILABLE",
-      message: "could not reach hack-for-facts-eb-server",
-    });
+    return err(upstreamUnavailable("could not reach hack-for-facts-eb-server"));
   }
 }
 
@@ -75,33 +165,102 @@ export class HackForFactsSource implements BudgetDataSource {
   constructor(private readonly config: AppConfig) {}
 
   async getSummary(): Promise<Result<BudgetSummary, AppError>> {
-    const result = await postGraphQL(this.config, GRAPHQL_SUMMARY_QUERY);
+    const year = this.config.hackForFactsYear;
+    const filterBase = {
+      report_period: reportPeriod(year),
+      normalization: "total" as const,
+    };
+
+    const result = await postGraphQL(this.config, SUMMARY_QUERY, {
+      inputs: [
+        {
+          seriesId: "revenue",
+          filter: { account_category: "vn", ...filterBase },
+        },
+        {
+          seriesId: "expenditure",
+          filter: { account_category: "ch", ...filterBase },
+        },
+        {
+          seriesId: "revenue_pct_gdp",
+          filter: {
+            account_category: "vn",
+            report_period: reportPeriod(year),
+            normalization: "percent_gdp",
+          },
+        },
+        {
+          seriesId: "expenditure_pct_gdp",
+          filter: {
+            account_category: "ch",
+            report_period: reportPeriod(year),
+            normalization: "percent_gdp",
+          },
+        },
+      ],
+    });
     if (result.isErr()) {
       return err(result.error);
     }
-    // TODO(P2): verify the real field mapping against the live schema.
-    return err({
-      code: "UPSTREAM_UNAVAILABLE",
-      message:
-        "summary field mapping not implemented — verify GraphQL schema first",
-    });
+
+    const parsed = ExecutionAnalyticsSchema.safeParse(result.value);
+    if (!parsed.success) {
+      return err(upstreamUnavailable("unexpected executionAnalytics shape"));
+    }
+
+    return buildSummary(parsed.data.executionAnalytics, Number(year));
   }
 
   async getDestinations(): Promise<Result<BudgetDestination[], AppError>> {
-    return err({
-      code: "UPSTREAM_UNAVAILABLE",
-      message:
-        "destinations field mapping not implemented — verify GraphQL schema first",
+    const year = this.config.hackForFactsYear;
+    const result = await postGraphQL(this.config, DESTINATIONS_QUERY, {
+      filter: {
+        account_category: "ch",
+        report_period: reportPeriod(year),
+        normalization: "total",
+      },
+      limit: DESTINATIONS_LIMIT,
     });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    const parsed = AggregatedLineItemsSchema.safeParse(result.value);
+    if (!parsed.success) {
+      return err(upstreamUnavailable("unexpected aggregatedLineItems shape"));
+    }
+
+    if (parsed.data.aggregatedLineItems.nodes.length === 0) {
+      return err(
+        upstreamUnavailable("aggregatedLineItems returned no line items")
+      );
+    }
+
+    return ok(buildDestinations(parsed.data.aggregatedLineItems.nodes));
   }
 
   async getInstitutions(
-    _category: string
+    category: string
   ): Promise<Result<BudgetInstitutions, AppError>> {
-    return err({
-      code: "UPSTREAM_UNAVAILABLE",
-      message:
-        "institutions field mapping not implemented — verify GraphQL schema first",
+    const year = this.config.hackForFactsYear;
+    const result = await postGraphQL(this.config, INSTITUTIONS_QUERY, {
+      filter: {
+        account_category: "ch",
+        report_period: reportPeriod(year),
+        normalization: "total",
+        functional_codes: [category],
+      },
+      limit: INSTITUTIONS_LIMIT,
     });
+    if (result.isErr()) {
+      return err(result.error);
+    }
+
+    const parsed = EntityAnalyticsSchema.safeParse(result.value);
+    if (!parsed.success) {
+      return err(upstreamUnavailable("unexpected entityAnalytics shape"));
+    }
+
+    return ok(buildInstitutions(category, parsed.data.entityAnalytics.nodes));
   }
 }

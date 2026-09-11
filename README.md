@@ -70,11 +70,11 @@ Reguli:
 
 ## Surse de date
 
-| Sursă               | Status | Note                                                                                                                                       |
-| ------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `static` (implicit) | P2 ✓   | Seed-uri demo identice cu cele din frontend                                                                                                |
-| `hackforfacts`      | P2 ⚠️  | Client GraphQL best-effort; maparea câmpurilor trebuie verificată pe schema live (`executionAnalytics`, `aggregatedLineItems`, `datasets`) |
-| INS / BNR           | P3/P4  | de adăugat prin porturi noi                                                                                                                |
+| Sursă               | Status | Note                                                                                                                                                                                                  |
+| ------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `static` (implicit) | P2 ✓   | Seed-uri demo identice cu cele din frontend                                                                                                                                                           |
+| `hackforfacts`      | P8 ✓   | Client GraphQL cu mapare verificată pe schema upstream: `executionAnalytics` (sumar), `aggregatedLineItems` (destinații), `entityAnalytics` (instituții). Anul se setează prin `HACK_FOR_FACTS_YEAR`. |
+| INS / BNR           | P3/P4  | de adăugat prin porturi noi                                                                                                                                                                           |
 
 ## Git workflow
 
