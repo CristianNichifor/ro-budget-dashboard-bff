@@ -24,7 +24,8 @@
     "test:coverage": "vitest run --coverage",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm format:check",
     "bnr:update": "tsx scripts/update-bnr-data.ts",
-    "bnr:validate": "tsx scripts/update-bnr-data.ts --check"
+    "bnr:validate": "tsx scripts/update-bnr-data.ts --check",
+    "smoke:live": "tsx scripts/smoke-live.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

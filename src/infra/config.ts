@@ -29,8 +29,9 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     logLevel: env.LOG_LEVEL ?? "info",
     corsOrigin: env.CORS_ORIGIN ?? "http://localhost:5173",
     dataSource: env.DATA_SOURCE === "hackforfacts" ? "hackforfacts" : "static",
-    hackForFactsBaseUrl: env.HACK_FOR_FACTS_BASE_URL ?? "http://localhost:3001",
-    hackForFactsTimeoutMs: Number(env.HACK_FOR_FACTS_TIMEOUT_MS ?? 3000),
+    hackForFactsBaseUrl:
+      env.HACK_FOR_FACTS_BASE_URL ?? "https://api.transparenta.eu",
+    hackForFactsTimeoutMs: Number(env.HACK_FOR_FACTS_TIMEOUT_MS ?? 20000),
     hackForFactsYear: env.HACK_FOR_FACTS_YEAR ?? "2024",
     insDataSource: env.DATA_SOURCE_INS === "insloader" ? "insloader" : "static",
     insLoaderBaseUrl: env.INS_LOADER_BASE_URL ?? "http://localhost:3002",

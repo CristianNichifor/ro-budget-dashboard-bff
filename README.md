@@ -2,7 +2,7 @@
 
 Backend-for-frontend pentru [ro-budget-dashboard](https://github.com/your-org/ro-budget-dashboard): agreghează datele bugetare (Open Budget 2026 / hack-for-facts-eb-server) cu context INS și BNR, într-un contract tipizat consumat de frontend.
 
-> **Status: P2.** Sursa implicită este `static` (seed-uri demo). Sursa `hackforfacts` este un client best-effort a cărui mapare GraphQL trebuie verificată împotriva schemei live.
+> **Status: P8.** Sursa implicită este `static` (seed-uri demo). Sursa `hackforfacts` servește datele live din API-ul public transparenta.eu (`https://api.transparenta.eu/graphql`) — vezi „Surse de date”.
 
 ## Tech stack
 
@@ -44,6 +44,7 @@ pnpm build        # tsc + tsc-alias → dist/
 pnpm start        # node dist/api.js
 pnpm bnr:update --input export.json  # actualizează seed-ul BNR (trimestrial)
 pnpm bnr:validate                    # validează seed-ul BNR curent
+pnpm smoke:live                      # smoke test împotriva API-ului public transparenta.eu
 ```
 
 ## Arhitectura
@@ -75,6 +76,17 @@ Reguli:
 | `static` (implicit) | P2 ✓   | Seed-uri demo identice cu cele din frontend                                                                                                                                                           |
 | `hackforfacts`      | P8 ✓   | Client GraphQL cu mapare verificată pe schema upstream: `executionAnalytics` (sumar), `aggregatedLineItems` (destinații), `entityAnalytics` (instituții). Anul se setează prin `HACK_FOR_FACTS_YEAR`. |
 | INS / BNR           | P3/P4  | de adăugat prin porturi noi                                                                                                                                                                           |
+
+### Date reale: API-ul public transparenta.eu
+
+transparenta.eu rulează deja eb-server-ul public, fără autentificare: `https://api.transparenta.eu/graphql`. Nu e nevoie să hostezi nimic — setează `DATA_SOURCE=hackforfacts` (vezi `.env.example`) și BFF-ul servește datele live; frontend-ul păstrează fallback-ul static dacă API-ul nu răspunde. Verifică integrarea cu `pnpm smoke:live`.
+
+Caveat-uri constatate pe instanța live:
+
+- **Valorile diferă de execuția oficială** (2024: venituri ≈1,46 trn lei vs ≈575 mld oficial). Setul de date pare să agrege diferit (posibil dublă numărare a transferurilor) — de verificat cu echipa transparenta.eu înainte de prezentare ca fapt.
+- Introspectarea GraphQL este dezactivată (maparea e verificată pe schema din repo + smoke test).
+- Latenta e de ordinul secundelor la prima cerere → `HACK_FOR_FACTS_TIMEOUT_MS` implicit 20000.
+- Datele acoperă până la ~2024; nume fără diacritice în unele câmpuri.
 
 ## Docker
 
