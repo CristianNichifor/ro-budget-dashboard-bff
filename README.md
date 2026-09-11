@@ -109,6 +109,19 @@ Imaginea de runtime conține doar dependențele de producție + `dist/` (entrypo
 
 CI: `.github/workflows/ci.yml` rulează `pnpm check` + build pe fiecare PR și publică imaginea pe GHCR la push pe `main`/tag-uri `v*`; `.github/workflows/smoke-live.yml` rulează `pnpm smoke:live` săptămânal/manual.
 
+## Cloudflare Workers (deploy principal, gratis)
+
+Același nucleu (surse, mapping, Decimal) rulează ca Worker pe Cloudflare — `worker/index.ts` (Hono) reutilizează modulele din `src/`, fără Fastify în bundle.
+
+```bash
+pnpm worker:dev      # local: http://localhost:8787
+pnpm worker:deploy   # https://ro-budget-dashboard-bff.cn-webify.workers.dev
+```
+
+- Config în `wrangler.toml`: `DATA_SOURCE` (`hackforfacts` live / `static` demo), URL-ul și timeout-urile upstream — editabile și din dashboard-ul Cloudflare.
+- Free tier Workers: 100k invocări/zi (fiecare pagină face ~6 apeluri → ~16k pagini/zi).
+- CI: `.github/workflows/deploy-worker.yml` — deploy la push pe `main` (necesită secretele `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`).
+
 ## Git workflow
 
 Conventional Commits; Husky rulează lint-staged + commitlint.

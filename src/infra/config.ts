@@ -15,7 +15,7 @@ export interface AppConfig {
 
 const DEFAULT_PORT = 3000;
 
-export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
+export function loadConfig(env: Record<string, string | undefined>): AppConfig {
   const port = Number(env.PORT ?? DEFAULT_PORT);
 
   if (Number.isNaN(port)) {

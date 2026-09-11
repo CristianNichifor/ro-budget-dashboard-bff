@@ -1,0 +1,13 @@
+name = "ro-budget-dashboard-bff"
+main = "worker/index.ts"
+compatibility_date = "2024-09-23"
+
+# Public budget data — no secrets. Flip DATA_SOURCE to "static" to serve the
+# bundled demo seeds instead of live transparenta.eu data (also editable in
+# the Cloudflare dashboard).
+[vars]
+DATA_SOURCE = "hackforfacts"
+HACK_FOR_FACTS_BASE_URL = "https://api.transparenta.eu"
+HACK_FOR_FACTS_TIMEOUT_MS = "20000"
+HACK_FOR_FACTS_YEAR = "2024"
+DATA_SOURCE_INS = "static"
