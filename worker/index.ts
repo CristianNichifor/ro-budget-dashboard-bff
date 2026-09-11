@@ -270,6 +270,46 @@ app.get("/api/macro/fx", async (c) => {
   return c.json(result.value);
 });
 
+app.get("/api/macro/gdp-growth", async (c) => {
+  const result = await c.get("sources").macro.getGdpGrowth();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/gdp-per-capita", async (c) => {
+  const result = await c.get("sources").macro.getGdpPerCapita();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/debt", async (c) => {
+  const result = await c.get("sources").macro.getDebt();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/trade", async (c) => {
+  const result = await c.get("sources").macro.getTrade();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/demographics", async (c) => {
+  const result = await c.get("sources").macro.getDemographics();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
 app.notFound((c) => c.json({ code: "NOT_FOUND", message: "not found" }, 404));
 
 export default app;

@@ -2,6 +2,7 @@ import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 import type { AppError } from "../../../common/errors";
 import { upstreamUnavailable } from "../../../common/errors";
+import type { GdpPerCapitaPoint, TradePoint } from "./types";
 
 /**
  * Parsers for the two upstream formats:
@@ -106,6 +107,66 @@ export function parseEurostatJsonStat(
 
   points.sort((a, b) => a.time.localeCompare(b.time));
   return ok(points);
+}
+
+/**
+ * Merges the two annual sdg_10_10 series (PPS per capita and the EU27
+ * volume index) into one point per year. Years present in only one series
+ * are dropped.
+ */
+export function mergeGdpPerCapita(
+  pps: ParsedTimeSeriesPoint[],
+  eu27Index: ParsedTimeSeriesPoint[]
+): Result<GdpPerCapitaPoint[], AppError> {
+  const indexByYear = new Map(
+    eu27Index.map((point) => [point.time, point.value])
+  );
+
+  const merged: GdpPerCapitaPoint[] = [];
+  for (const point of pps) {
+    const index = indexByYear.get(point.time);
+    if (index === undefined) {
+      continue;
+    }
+    merged.push({ year: point.time, pps: point.value, eu27Index: index });
+  }
+
+  if (merged.length === 0) {
+    return err(upstreamUnavailable("no matching GDP per capita years"));
+  }
+  return ok(merged);
+}
+
+/**
+ * Merges exports and imports (percent of GDP) into yearly trade points and
+ * derives the balance, rounded to one decimal.
+ */
+export function buildTradePoints(
+  exports: ParsedTimeSeriesPoint[],
+  imports: ParsedTimeSeriesPoint[]
+): Result<TradePoint[], AppError> {
+  const importsByYear = new Map(
+    imports.map((point) => [point.time, point.value])
+  );
+
+  const merged: TradePoint[] = [];
+  for (const point of exports) {
+    const importsValue = importsByYear.get(point.time);
+    if (importsValue === undefined) {
+      continue;
+    }
+    merged.push({
+      year: point.time,
+      exportsPctGdp: point.value,
+      importsPctGdp: importsValue,
+      balancePctGdp: Math.round((point.value - importsValue) * 10) / 10,
+    });
+  }
+
+  if (merged.length === 0) {
+    return err(upstreamUnavailable("no matching trade years"));
+  }
+  return ok(merged);
 }
 
 /**

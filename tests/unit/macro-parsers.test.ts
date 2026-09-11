@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildTradePoints,
+  mergeGdpPerCapita,
   parseEcbFx,
   parseEurostatJsonStat,
 } from "../../src/modules/macro/core/parsers";
@@ -92,6 +94,65 @@ describe("parseEcbFx", () => {
 
   it("fails on malformed input", () => {
     const result = parseEcbFx({ dataSets: [] });
+    expect(result.isErr()).toBe(true);
+  });
+});
+
+describe("mergeGdpPerCapita", () => {
+  it("merges matching years and drops orphans", () => {
+    const result = mergeGdpPerCapita(
+      [
+        { time: "2024", value: 30800 },
+        { time: "2025", value: 32400 },
+      ],
+      [
+        { time: "2024", value: 77 },
+        { time: "2026", value: 79 },
+      ]
+    );
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) {
+      return;
+    }
+    expect(result.value).toEqual([{ year: "2024", pps: 30800, eu27Index: 77 }]);
+  });
+
+  it("fails when no years overlap", () => {
+    const result = mergeGdpPerCapita(
+      [{ time: "2024", value: 30800 }],
+      [{ time: "2026", value: 79 }]
+    );
+    expect(result.isErr()).toBe(true);
+  });
+});
+
+describe("buildTradePoints", () => {
+  it("derives the balance as exports minus imports", () => {
+    const result = buildTradePoints(
+      [{ time: "2025", value: 35.5 }],
+      [{ time: "2025", value: 40.7 }]
+    );
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) {
+      return;
+    }
+    expect(result.value).toEqual([
+      {
+        year: "2025",
+        exportsPctGdp: 35.5,
+        importsPctGdp: 40.7,
+        balancePctGdp: -5.2,
+      },
+    ]);
+  });
+
+  it("fails when no years overlap", () => {
+    const result = buildTradePoints(
+      [{ time: "2025", value: 35.5 }],
+      [{ time: "2024", value: 40.7 }]
+    );
     expect(result.isErr()).toBe(true);
   });
 });

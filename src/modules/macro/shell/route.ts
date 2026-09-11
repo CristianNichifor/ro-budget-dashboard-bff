@@ -47,4 +47,44 @@ export const macroRoutes: FastifyPluginAsync<{
     }
     return result.value;
   });
+
+  app.get("/gdp-growth", async (_request, reply) => {
+    const result = await source.getGdpGrowth();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/gdp-per-capita", async (_request, reply) => {
+    const result = await source.getGdpPerCapita();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/debt", async (_request, reply) => {
+    const result = await source.getDebt();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/trade", async (_request, reply) => {
+    const result = await source.getTrade();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/demographics", async (_request, reply) => {
+    const result = await source.getDemographics();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
 };
