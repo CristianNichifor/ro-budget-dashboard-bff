@@ -8,12 +8,14 @@ export interface AppConfig {
   hackForFactsBaseUrl: string;
   hackForFactsTimeoutMs: number;
   hackForFactsYear: string;
-  insDataSource: "static" | "insloader";
+  insDataSource: "static" | "insloader" | "eurostat";
   insLoaderBaseUrl: string;
   insLoaderTimeoutMs: number;
   soeBaseUrl: string;
   soeTimeoutMs: number;
   macroTimeoutMs: number;
+  ckanBaseUrl: string;
+  ckanTimeoutMs: number;
 }
 
 const DEFAULT_PORT = 3000;
@@ -36,11 +38,18 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
       env.HACK_FOR_FACTS_BASE_URL ?? "https://api.transparenta.eu",
     hackForFactsTimeoutMs: Number(env.HACK_FOR_FACTS_TIMEOUT_MS ?? 20000),
     hackForFactsYear: env.HACK_FOR_FACTS_YEAR ?? "2024",
-    insDataSource: env.DATA_SOURCE_INS === "insloader" ? "insloader" : "static",
+    insDataSource:
+      env.DATA_SOURCE_INS === "insloader"
+        ? "insloader"
+        : env.DATA_SOURCE_INS === "eurostat"
+          ? "eurostat"
+          : "static",
     insLoaderBaseUrl: env.INS_LOADER_BASE_URL ?? "http://localhost:3002",
     insLoaderTimeoutMs: Number(env.INS_LOADER_TIMEOUT_MS ?? 3000),
     soeBaseUrl: env.SOE_BASE_URL ?? "https://companiidestat.ro",
     soeTimeoutMs: Number(env.SOE_TIMEOUT_MS ?? 15000),
     macroTimeoutMs: Number(env.MACRO_TIMEOUT_MS ?? 15000),
+    ckanBaseUrl: env.CKAN_BASE_URL ?? "https://data.gov.ro",
+    ckanTimeoutMs: Number(env.CKAN_TIMEOUT_MS ?? 20000),
   };
 }

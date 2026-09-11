@@ -12,6 +12,8 @@ const InvestmentsResponseSchema = Type.Object({
   year: Type.Integer(),
   total: Type.String(),
   counties: Type.Array(CountyInvestmentSchema),
+  estimated: Type.Boolean(),
+  note: Type.String(),
 });
 
 const ErrorResponseSchema = Type.Object({

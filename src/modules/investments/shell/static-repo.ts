@@ -5,6 +5,9 @@ import { SEED_COUNTY_INVESTMENTS } from "../../../common/seed-data";
 import type { InvestmentsSource } from "../core/ports";
 import type { InvestmentsByCounty } from "../core/types";
 
+const INVESTMENTS_ESTIMATE_NOTE =
+  "Estimare: programul de investiții publice 2026 nu are o sursă publică structurată la nivel de județ; sumele sunt aproximative.";
+
 export class StaticInvestmentsSource implements InvestmentsSource {
   async getByCounty(): Promise<Result<InvestmentsByCounty, AppError>> {
     const total = SEED_COUNTY_INVESTMENTS.reduce(
@@ -16,6 +19,8 @@ export class StaticInvestmentsSource implements InvestmentsSource {
       year: 2026,
       total: total.toString(),
       counties: SEED_COUNTY_INVESTMENTS,
+      estimated: true,
+      note: INVESTMENTS_ESTIMATE_NOTE,
     });
   }
 }

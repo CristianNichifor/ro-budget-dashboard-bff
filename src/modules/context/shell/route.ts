@@ -1,35 +1,22 @@
 import { Type } from "@sinclair/typebox";
 import type { FastifyPluginAsync } from "fastify";
-import { SEED_INFLATION_TARGET } from "../../../common/seed-data";
 import type { AppError } from "../../../common/errors";
 import type { ContextDataSource } from "../core/ports";
-import { buildMonetaryContext } from "../core/use-cases/monetary-context";
 
-const InflationPointSchema = Type.Object({
-  year: Type.Integer(),
-  cpiPercent: Type.Number(),
-  avgNetSalary: Type.Number(),
+const TrendsQuerySchema = Type.Object({
+  metric: Type.String({ minLength: 1 }),
 });
 
-const RealWagePointSchema = Type.Object({
-  year: Type.Integer(),
-  nominal: Type.Number(),
-  real: Type.Number(),
-});
-
-const MonetaryResponseSchema = Type.Object({
-  inflation: Type.Object({
-    current: Type.Number(),
-    target: Type.Number(),
-    history: Type.Array(InflationPointSchema),
-  }),
-  realWage: Type.Array(RealWagePointSchema),
-  debt: Type.Object({
-    total: Type.String(),
-    interestPayment: Type.String(),
-    averageRate: Type.Number(),
-    debtServiceRatio: Type.String(),
-  }),
+const TrendsResponseSchema = Type.Object({
+  metric: Type.String(),
+  source: Type.String(),
+  sourceUpdated: Type.String(),
+  data: Type.Array(
+    Type.Object({
+      year: Type.Integer(),
+      amount: Type.String(),
+    })
+  ),
 });
 
 const ErrorResponseSchema = Type.Object({
@@ -43,21 +30,6 @@ const ErrorResponses = {
   500: ErrorResponseSchema,
   502: ErrorResponseSchema,
 } as const;
-
-const TrendsQuerySchema = Type.Object({
-  metric: Type.String({ minLength: 1 }),
-});
-
-const TrendsResponseSchema = Type.Object({
-  metric: Type.String(),
-  source: Type.String(),
-  data: Type.Array(
-    Type.Object({
-      year: Type.Integer(),
-      amount: Type.String(),
-    })
-  ),
-});
 
 interface ContextRouteDependencies {
   source: ContextDataSource;
@@ -80,38 +52,6 @@ export const contextRoutes: FastifyPluginAsync<{
   dependencies: ContextRouteDependencies;
 }> = async (app, options) => {
   const { source } = options.dependencies;
-
-  app.get(
-    "/monetary",
-    {
-      schema: {
-        response: { 200: MonetaryResponseSchema, ...ErrorResponses },
-      },
-    },
-    async (_request, reply) => {
-      const inflation = await source.getInflationSeries();
-      if (inflation.isErr()) {
-        return reply.code(statusFor(inflation.error)).send(inflation.error);
-      }
-
-      const debt = await source.getDebtContext();
-      if (debt.isErr()) {
-        return reply.code(statusFor(debt.error)).send(debt.error);
-      }
-
-      const summary = await source.getBudgetSummary();
-      if (summary.isErr()) {
-        return reply.code(statusFor(summary.error)).send(summary.error);
-      }
-
-      return buildMonetaryContext(
-        inflation.value,
-        SEED_INFLATION_TARGET,
-        debt.value,
-        summary.value
-      );
-    }
-  );
 
   app.get(
     "/trends",

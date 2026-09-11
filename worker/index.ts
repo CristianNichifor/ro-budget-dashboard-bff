@@ -2,13 +2,11 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import type { AppError } from "../src/common/errors";
 import { notFound } from "../src/common/errors";
-import { SEED_INFLATION_TARGET } from "../src/common/seed-data";
 import { loadConfig, type AppConfig } from "../src/infra/config";
 import { buildBudgetSource } from "../src/modules/budget/shell/repo";
 import type { BudgetDataSource } from "../src/modules/budget/core/ports";
 import { buildContextSource } from "../src/modules/context/shell/repo";
 import type { ContextDataSource } from "../src/modules/context/core/ports";
-import { buildMonetaryContext } from "../src/modules/context/core/use-cases/monetary-context";
 import { buildInsSource } from "../src/modules/ins/shell/repo";
 import type { InsDataSource } from "../src/modules/ins/core/ports";
 import { buildInvestmentsSource } from "../src/modules/investments/shell/repo";
@@ -20,6 +18,19 @@ import { buildSoeSource } from "../src/modules/soe/shell/repo";
 import type { SoeDataSource } from "../src/modules/soe/core/ports";
 import { buildMacroSource } from "../src/modules/macro/shell/repo";
 import type { MacroDataSource } from "../src/modules/macro/core/ports";
+import { buildAdoptedSource } from "../src/modules/budget-adopted/shell/repo";
+import type { AdoptedBudgetDataSource } from "../src/modules/budget-adopted/core/ports";
+import { buildBudgetComparison } from "../src/modules/budget-adopted/core/parser";
+import { ADOPTED_SCOPE_NOTE } from "../src/modules/budget-adopted/core/types";
+import { buildWageSource } from "../src/modules/wages/shell/repo";
+import type { WageDataSource } from "../src/modules/wages/core/ports";
+import { buildSocietySource } from "../src/modules/society/shell/repo";
+import type { SocietyDataSource } from "../src/modules/society/core/ports";
+import { buildEnergySource } from "../src/modules/energy/shell/repo";
+import type { EnergyDataSource } from "../src/modules/energy/core/ports";
+import { buildLabourSource } from "../src/modules/labour/shell/repo";
+import type { LabourDataSource } from "../src/modules/labour/core/ports";
+import type { Decimal } from "decimal.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -30,6 +41,11 @@ interface Sources {
   investments: InvestmentsSource;
   soe: SoeDataSource;
   macro: MacroDataSource;
+  adopted: AdoptedBudgetDataSource;
+  wages: WageDataSource;
+  society: SocietyDataSource;
+  energy: EnergyDataSource;
+  labour: LabourDataSource;
 }
 
 interface AppVariables {
@@ -40,11 +56,16 @@ interface AppVariables {
 function buildSources(config: AppConfig): Sources {
   return {
     budget: buildBudgetSource(config),
-    context: buildContextSource(),
+    context: buildContextSource(config),
     ins: buildInsSource(config),
     investments: buildInvestmentsSource(config),
     soe: buildSoeSource(config),
     macro: buildMacroSource(config),
+    adopted: buildAdoptedSource(config),
+    wages: buildWageSource(config),
+    society: buildSocietySource(config),
+    energy: buildEnergySource(config),
+    labour: buildLabourSource(config),
   };
 }
 
@@ -112,28 +133,100 @@ app.get("/api/budget/institutions", async (c) => {
   return c.json(result.value);
 });
 
-app.get("/api/context/monetary", async (c) => {
-  const { context } = c.get("sources");
-  const inflation = await context.getInflationSeries();
-  if (inflation.isErr()) {
-    return errorReply(c, inflation.error);
+function money(value: Decimal): string {
+  return value.toFixed(0);
+}
+
+app.get("/api/budget/adopted", async (c) => {
+  const adopted = c.get("sources").adopted;
+  const year =
+    c.req.query("year") ?? String(adopted.supportedYears().at(-1) ?? 2025);
+  if (!/^\d{4}$/.test(year)) {
+    return c.json(
+      { code: "INVALID_INPUT", message: `invalid year: ${year}` },
+      400
+    );
   }
-  const debt = await context.getDebtContext();
-  if (debt.isErr()) {
-    return errorReply(c, debt.error);
+  const result = await adopted.getAdopted(year);
+  if (result.isErr()) {
+    return errorReply(c, result.error);
   }
-  const summary = await context.getBudgetSummary();
-  if (summary.isErr()) {
-    return errorReply(c, summary.error);
+  const totals = result.value;
+  return c.json({
+    year: totals.year,
+    revenue: money(totals.revenue),
+    expenditure: money(totals.expenditure),
+    deficit: money(totals.deficit),
+    funds: totals.funds.map((fund) => ({
+      id: fund.id,
+      name: fund.name,
+      revenue: money(fund.revenue),
+      expenditure: money(fund.expenditure),
+      deficit: money(fund.deficit),
+    })),
+    warnings: totals.warnings,
+    note: ADOPTED_SCOPE_NOTE,
+  });
+});
+
+app.get("/api/budget/comparison", async (c) => {
+  const { adopted, budget } = c.get("sources");
+  const comparisonYears = adopted
+    .supportedYears()
+    .filter((year) => year >= 2020);
+  const yearsParam = c.req.query("years") ?? comparisonYears.join(",");
+  if (!/^\d{4}(,\d{4})*$/.test(yearsParam)) {
+    return c.json(
+      { code: "INVALID_INPUT", message: `invalid years: ${yearsParam}` },
+      400
+    );
   }
-  return c.json(
-    buildMonetaryContext(
-      inflation.value,
-      SEED_INFLATION_TARGET,
-      debt.value,
-      summary.value
-    )
-  );
+
+  const points = [];
+  for (const year of yearsParam.split(",")) {
+    const adoptedResult = await adopted.getAdopted(year);
+    if (adoptedResult.isErr()) {
+      return errorReply(c, adoptedResult.error);
+    }
+    const executedResult = await budget.getSummary(year);
+    // The static demo source answers every year with the 2026 seed — only
+    // accept an execution summary whose year matches the request.
+    const executed =
+      executedResult.isOk() && executedResult.value.year === Number(year)
+        ? executedResult.value
+        : null;
+
+    const comparison = buildBudgetComparison(
+      Number(year),
+      adoptedResult.value,
+      executed
+    );
+    points.push({
+      year: comparison.year,
+      adopted: {
+        revenue: money(comparison.adopted.revenue),
+        expenditure: money(comparison.adopted.expenditure),
+        deficit: money(comparison.adopted.deficit),
+      },
+      executed:
+        comparison.executed === null
+          ? null
+          : {
+              revenue: money(comparison.executed.revenue),
+              expenditure: money(comparison.executed.expenditure),
+              deficit: money(comparison.executed.deficit),
+              deficitPercentGdp:
+                comparison.executed.deficitPercentGdp.toFixed(1),
+            },
+      deficitDelta:
+        comparison.deficitDelta === null
+          ? null
+          : money(comparison.deficitDelta),
+      note: comparison.note,
+    });
+  }
+
+  return c.json({ points });
 });
 
 app.get("/api/context/trends", async (c) => {
@@ -286,6 +379,14 @@ app.get("/api/macro/gdp-per-capita", async (c) => {
   return c.json(result.value);
 });
 
+app.get("/api/macro/gdp-regions", async (c) => {
+  const result = await c.get("sources").macro.getGdpRegions();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
 app.get("/api/macro/debt", async (c) => {
   const result = await c.get("sources").macro.getDebt();
   if (result.isErr()) {
@@ -304,6 +405,118 @@ app.get("/api/macro/trade", async (c) => {
 
 app.get("/api/macro/demographics", async (c) => {
   const result = await c.get("sources").macro.getDemographics();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/deficit", async (c) => {
+  const result = await c.get("sources").macro.getDeficit();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/employment", async (c) => {
+  const result = await c.get("sources").macro.getEmployment();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/current-account", async (c) => {
+  const result = await c.get("sources").macro.getCurrentAccount();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/macro/rates", async (c) => {
+  const result = await c.get("sources").macro.getRates();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/wages/context", async (c) => {
+  const result = await c.get("sources").wages.getContext();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/wages/monthly", async (c) => {
+  const result = await c.get("sources").wages.getMonthly();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/wages/real", async (c) => {
+  const result = await c.get("sources").wages.getReal();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/society/population", async (c) => {
+  const result = await c.get("sources").society.getPopulation();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/society/spending", async (c) => {
+  const result = await c.get("sources").society.getSpending();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/society/education", async (c) => {
+  const result = await c.get("sources").society.getEducation();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/society/health", async (c) => {
+  const result = await c.get("sources").society.getHealth();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/society/demographics", async (c) => {
+  const result = await c.get("sources").society.getDemographics();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/energy/context", async (c) => {
+  const result = await c.get("sources").energy.getContext();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/labour/context", async (c) => {
+  const result = await c.get("sources").labour.getContext();
   if (result.isErr()) {
     return errorReply(c, result.error);
   }

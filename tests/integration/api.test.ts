@@ -1,7 +1,30 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
+import { ok, type Result } from "neverthrow";
 import { buildApp } from "../../src/app/build-app";
+import type { AppError } from "../../src/common/errors";
 import { loadConfig } from "../../src/infra/config";
+import type {
+  ContextDataSource,
+  ContextTrend,
+} from "../../src/modules/context/core/ports";
+
+class FakeContextSource implements ContextDataSource {
+  async getTrend(metric: string): Promise<Result<ContextTrend, AppError>> {
+    if (metric === "health-budget") {
+      return ok({
+        metric,
+        source: "test",
+        sourceUpdated: "2026-08-14",
+        data: [
+          { year: 2021, amount: "22000.0" },
+          { year: 2022, amount: "24500.0" },
+        ],
+      });
+    }
+    return ok({ metric, source: "unknown", sourceUpdated: "", data: [] });
+  }
+}
 
 let app: FastifyInstance | undefined;
 
@@ -9,6 +32,7 @@ async function getApp(): Promise<FastifyInstance> {
   if (app === undefined) {
     app = buildApp({
       config: loadConfig({ NODE_ENV: "test", PORT: "3000" }),
+      overrides: { contextSource: new FakeContextSource() },
     });
     await app.ready();
   }
@@ -161,20 +185,6 @@ describe("GET /api/budget", () => {
 });
 
 describe("GET /api/context", () => {
-  it("returns the monetary context", async () => {
-    const instance = await getApp();
-    const response = await instance.inject({
-      method: "GET",
-      url: "/api/context/monetary",
-    });
-
-    expect(response.statusCode).toBe(200);
-    const body = response.json();
-    expect(body.inflation.current).toBeCloseTo(9.69, 2);
-    expect(body.realWage).toHaveLength(6);
-    expect(body.debt.debtServiceRatio).toBe("8.15");
-  });
-
   it("returns the health budget trend", async () => {
     const instance = await getApp();
     const response = await instance.inject({
@@ -185,7 +195,19 @@ describe("GET /api/context", () => {
     expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.metric).toBe("health-budget");
-    expect(body.data).toHaveLength(6);
+    expect(body.data).toHaveLength(2);
     expect(body.data[0].year).toBe(2021);
+    expect(body.data[0].amount).toBe("22000.0");
+  });
+
+  it("returns 404 for an unknown metric", async () => {
+    const instance = await getApp();
+    const response = await instance.inject({
+      method: "GET",
+      url: "/api/context/trends?metric=inexistent",
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().code).toBe("NOT_FOUND");
   });
 });

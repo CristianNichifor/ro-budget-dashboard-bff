@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTradePoints,
+  compressRateSteps,
   mergeGdpPerCapita,
   parseEcbFx,
   parseEurostatJsonStat,
+  parseEurostatRegions,
 } from "../../src/modules/macro/core/parsers";
 
 const jsonStatSample = {
@@ -154,5 +156,82 @@ describe("buildTradePoints", () => {
       [{ time: "2024", value: 40.7 }]
     );
     expect(result.isErr()).toBe(true);
+  });
+});
+
+describe("parseEurostatRegions", () => {
+  const multiGeoSample = {
+    id: ["freq", "unit", "geo", "time"],
+    size: [1, 1, 3, 1],
+    value: { 0: 30800, 1: 32400, 2: 41200 },
+    dimension: {
+      freq: { label: "Frequency", category: { index: { A: 0 } } },
+      unit: { label: "Unit", category: { index: { PPS: 0 } } },
+      geo: {
+        label: "Geopolitical entity",
+        category: { index: { RO11: 0, RO12: 1, RO32: 2 } },
+      },
+      time: { label: "Time", category: { index: { 2024: 0 } } },
+    },
+  };
+
+  it("extracts the latest value for each requested region", () => {
+    const result = parseEurostatRegions(multiGeoSample, [
+      "RO11",
+      "RO12",
+      "RO32",
+    ]);
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) {
+      return;
+    }
+    expect(result.value).toEqual([
+      { code: "RO11", value: 30800 },
+      { code: "RO12", value: 32400 },
+      { code: "RO32", value: 41200 },
+    ]);
+  });
+
+  it("skips region codes that are absent from the dataset", () => {
+    const result = parseEurostatRegions(multiGeoSample, ["RO11", "RO99"]);
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) {
+      return;
+    }
+    expect(result.value).toEqual([{ code: "RO11", value: 30800 }]);
+  });
+
+  it("fails when geo/time dimensions are missing", () => {
+    const result = parseEurostatRegions(
+      {
+        id: ["freq", "unit", "time"],
+        size: [1, 1, 1],
+        value: {},
+        dimension: {},
+      },
+      ["RO11"]
+    );
+    expect(result.isErr()).toBe(true);
+  });
+});
+
+describe("compressRateSteps", () => {
+  it("keeps the first point and every change point", () => {
+    const result = compressRateSteps([
+      { time: "2020-01-01", value: -0.5 },
+      { time: "2020-01-02", value: -0.5 },
+      { time: "2020-01-03", value: -0.25 },
+      { time: "2020-01-04", value: -0.25 },
+      { time: "2020-01-05", value: 0 },
+    ]);
+    expect(result).toEqual([
+      { time: "2020-01-01", value: -0.5 },
+      { time: "2020-01-03", value: -0.25 },
+      { time: "2020-01-05", value: 0 },
+    ]);
+  });
+
+  it("returns an empty list for empty input", () => {
+    expect(compressRateSteps([])).toEqual([]);
   });
 });

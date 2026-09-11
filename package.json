@@ -1,7 +1,7 @@
 {
   "name": "ro-budget-dashboard-bff",
   "version": "0.1.0",
-  "description": "BFF for the Romanian citizen budget dashboard — aggregates budget (Open Budget), INS and BNR context",
+  "description": "BFF for the Romanian citizen budget dashboard — aggregates budget (Open Budget), Eurostat, ECB and INS context",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.3.4",
@@ -23,8 +23,6 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm format:check",
-    "bnr:update": "tsx scripts/update-bnr-data.ts",
-    "bnr:validate": "tsx scripts/update-bnr-data.ts --check",
     "smoke:live": "tsx scripts/smoke-live.ts",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy"

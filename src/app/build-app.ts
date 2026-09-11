@@ -16,12 +16,33 @@ import { soeRoutes } from "../modules/soe/shell/route";
 import { buildSoeSource } from "../modules/soe/shell/repo";
 import { macroRoutes } from "../modules/macro/shell/route";
 import { buildMacroSource } from "../modules/macro/shell/repo";
+import { buildAdoptedSource } from "../modules/budget-adopted/shell/repo";
+import { budgetAdoptedRoutes } from "../modules/budget-adopted/shell/route";
+import type { AdoptedBudgetDataSource } from "../modules/budget-adopted/core/ports";
+import type { BudgetDataSource } from "../modules/budget/core/ports";
+import type { ContextDataSource } from "../modules/context/core/ports";
+import { buildWageSource } from "../modules/wages/shell/repo";
+import { wageRoutes } from "../modules/wages/shell/route";
+import { buildSocietySource } from "../modules/society/shell/repo";
+import { societyRoutes } from "../modules/society/shell/route";
+import { buildEnergySource } from "../modules/energy/shell/repo";
+import { energyRoutes } from "../modules/energy/shell/route";
+import { buildLabourSource } from "../modules/labour/shell/repo";
+import { labourRoutes } from "../modules/labour/shell/route";
 
 export interface AppDependencies {
   config: AppConfig;
+  overrides?: {
+    adoptedSource?: AdoptedBudgetDataSource;
+    budgetSource?: BudgetDataSource;
+    contextSource?: ContextDataSource;
+  };
 }
 
-export function buildApp({ config }: AppDependencies): FastifyInstance {
+export function buildApp({
+  config,
+  overrides,
+}: AppDependencies): FastifyInstance {
   const app = fastify({
     logger: config.nodeEnv === "test" ? false : { level: config.logLevel },
     disableRequestLogging: config.nodeEnv !== "development",
@@ -43,7 +64,7 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   app.get("/health/ready", async () => ({ status: "ready" }));
 
   const budgetSource = buildBudgetSource(config);
-  const contextSource = buildContextSource();
+  const contextSource = overrides?.contextSource ?? buildContextSource(config);
   const insSource = buildInsSource(config);
 
   void app.register(salaryRoutes, {
@@ -85,6 +106,39 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   void app.register(macroRoutes, {
     prefix: "/api/macro",
     dependencies: { source: macroSource },
+  });
+
+  const adoptedSource = overrides?.adoptedSource ?? buildAdoptedSource(config);
+  void app.register(budgetAdoptedRoutes, {
+    prefix: "/api/budget",
+    dependencies: {
+      adoptedSource,
+      budgetSource: overrides?.budgetSource ?? budgetSource,
+    },
+  });
+
+  const wageSource = buildWageSource(config);
+  void app.register(wageRoutes, {
+    prefix: "/api/wages",
+    dependencies: { source: wageSource },
+  });
+
+  const societySource = buildSocietySource(config);
+  void app.register(societyRoutes, {
+    prefix: "/api/society",
+    dependencies: { source: societySource },
+  });
+
+  const energySource = buildEnergySource(config);
+  void app.register(energyRoutes, {
+    prefix: "/api/energy",
+    dependencies: { source: energySource },
+  });
+
+  const labourSource = buildLabourSource(config);
+  void app.register(labourRoutes, {
+    prefix: "/api/labour",
+    dependencies: { source: labourSource },
   });
 
   return app;

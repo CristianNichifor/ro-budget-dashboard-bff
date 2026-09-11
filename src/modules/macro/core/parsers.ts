@@ -56,6 +56,22 @@ export interface ParsedTimeSeriesPoint {
 }
 
 /**
+ * Extracts the Eurostat JSON-stat `updated` timestamp (ISO date of the
+ * upstream dataset's last revision), or null when absent.
+ */
+export function parseEurostatUpdated(input: unknown): string | null {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "updated" in input &&
+    typeof (input as { updated: unknown }).updated === "string"
+  ) {
+    return (input as { updated: string }).updated.slice(0, 10);
+  }
+  return null;
+}
+
+/**
  * Decodes a Eurostat JSON-stat dataset with exactly one varying dimension
  * (time) into an ordered series. Missing values (null) are skipped.
  */
@@ -107,6 +123,90 @@ export function parseEurostatJsonStat(
 
   points.sort((a, b) => a.time.localeCompare(b.time));
   return ok(points);
+}
+
+/**
+ * Extracts a single (latest) value per geo code from a Eurostat JSON-stat
+ * dataset whose varying dimensions are `geo` and `time` (all dimensions
+ * before `geo` must be singletons — true once freq/unit are filtered).
+ * Used for regional datasets like NUTS2 GDP per capita.
+ */
+export interface RegionalPoint {
+  code: string;
+  value: number;
+}
+
+export function parseEurostatRegions(
+  input: unknown,
+  regionCodes: string[]
+): Result<RegionalPoint[], AppError> {
+  const parsed = JsonStatSchema.safeParse(input);
+  if (!parsed.success) {
+    return err(upstreamUnavailable("unexpected Eurostat multi-geo shape"));
+  }
+
+  const { id, size, value, dimension } = parsed.data;
+  const geoPosition = id.indexOf("geo");
+  const timePosition = id.length - 1;
+  if (geoPosition < 0 || id[timePosition] !== "time") {
+    return err(
+      upstreamUnavailable("Eurostat regional dataset without geo/time dims")
+    );
+  }
+
+  for (let i = 0; i < geoPosition; i += 1) {
+    if ((size[i] ?? 1) !== 1) {
+      return err(
+        upstreamUnavailable(
+          "Eurostat regional dataset with a multi-value dimension before geo"
+        )
+      );
+    }
+  }
+
+  const timeSize = size[timePosition] ?? 1;
+  const latestTimeIndex = timeSize - 1;
+  const geoDimension = dimension["geo"];
+  if (geoDimension === undefined) {
+    return err(upstreamUnavailable("Eurostat geo dimension metadata missing"));
+  }
+  const geoIndex = geoDimension.category.index;
+
+  const points: RegionalPoint[] = [];
+  for (const code of regionCodes) {
+    const geoPos = geoIndex[code];
+    if (geoPos === undefined) {
+      continue;
+    }
+    const linear = geoPos * timeSize + latestTimeIndex;
+    const rawValue = value[String(linear)];
+    if (rawValue === undefined || rawValue === null) {
+      continue;
+    }
+    points.push({ code, value: rawValue });
+  }
+
+  return ok(points);
+}
+
+/**
+ * Compresses a daily policy-rate series to its change points: keeps the
+ * first observation and any observation whose value differs from the
+ * previous one. The ECB publishes daily values that only move at policy
+ * meetings — a step chart of ~15 points tells the same story.
+ */
+export function compressRateSteps(
+  points: ParsedTimeSeriesPoint[]
+): ParsedTimeSeriesPoint[] {
+  const compressed: ParsedTimeSeriesPoint[] = [];
+  let previous: number | undefined;
+  for (const point of points) {
+    if (previous === undefined || point.value !== previous) {
+      compressed.push(point);
+    }
+    previous = point.value;
+  }
+  return compressed;
 }
 
 /**

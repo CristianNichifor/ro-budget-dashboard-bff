@@ -1,28 +1,9 @@
-import type {
-  BudgetDestination,
-  BudgetSummary,
-  InflationPoint,
-  YearAmount,
-} from "./types";
-import bnrData from "../data/bnr-inflation.json" with { type: "json" };
-import { bnrDataSchema } from "../data/bnrDataSchema";
+import type { BudgetDestination, BudgetSummary } from "./types";
 
 /**
- * DEMO seeds, mirroring the frontend's static data. Phase P3/P4 replaces
- * them via the hackforfacts source (or INS/BNR integrations).
- *
- * The BNR monetary context lives in src/data/bnr-inflation.json and is
- * validated against bnrDataSchema on import (fail fast). Update it with
- * `pnpm bnr:update --input <export.json>`; validate with `pnpm bnr:validate`.
+ * DEMO seeds, mirroring the frontend's static data. Live modules replace
+ * these at runtime; the seeds are the honest fallback when the API is down.
  */
-const parsedBnrData = bnrDataSchema.parse(bnrData);
-
-export const SEED_INFLATION_SERIES: InflationPoint[] = parsedBnrData.series;
-
-export const SEED_INFLATION_TARGET = parsedBnrData.inflationTarget;
-
-export const SEED_DEBT = parsedBnrData.debt;
-
 export const SEED_BUDGET_SUMMARY: BudgetSummary = {
   year: 2026,
   revenue: "728990724000",
@@ -88,15 +69,6 @@ export const SEED_BUDGET_DESTINATIONS: BudgetDestination[] = [
   },
 ];
 
-export const SEED_HEALTH_BUDGET_TREND: YearAmount[] = [
-  { year: 2021, amount: "22000000000" },
-  { year: 2022, amount: "24500000000" },
-  { year: 2023, amount: "26000000000" },
-  { year: 2024, amount: "27100000000" },
-  { year: 2025, amount: "26140000000" },
-  { year: 2026, amount: "22780000000" },
-];
-
 export interface InsMetricPointSeed {
   year: number;
   value: number;
@@ -129,28 +101,14 @@ export const SEED_INS_METRICS: InsMetricSeed[] = [
   },
   {
     code: "pensioners",
-    unit: "milioane persoane",
-    label: "Număr pensionari",
+    unit: "persoane",
+    label: "Beneficiari de pensii",
     data: [
-      { year: 2021, value: 4.85 },
-      { year: 2022, value: 4.82 },
-      { year: 2023, value: 4.79 },
-      { year: 2024, value: 4.75 },
-      { year: 2025, value: 4.72 },
-      { year: 2026, value: 4.7 },
-    ],
-  },
-  {
-    code: "average-pension",
-    unit: "lei/lună",
-    label: "Pensie medie",
-    data: [
-      { year: 2021, value: 1601 },
-      { year: 2022, value: 1680 },
-      { year: 2023, value: 1971 },
-      { year: 2024, value: 2201 },
-      { year: 2025, value: 2350 },
-      { year: 2026, value: 2500 },
+      { year: 2019, value: 5140756 },
+      { year: 2020, value: 5122122 },
+      { year: 2021, value: 5043972 },
+      { year: 2022, value: 4993076 },
+      { year: 2023, value: 4983074 },
     ],
   },
   {

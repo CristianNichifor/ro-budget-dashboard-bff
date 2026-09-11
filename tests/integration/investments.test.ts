@@ -36,6 +36,8 @@ describe("GET /api/investments/by-county", () => {
     expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.year).toBe(2026);
+    expect(body.estimated).toBe(true);
+    expect(typeof body.note).toBe("string");
     expect(body.counties).toHaveLength(SEED_COUNTY_INVESTMENTS.length);
     expect(typeof body.total).toBe("string");
     for (const county of body.counties) {

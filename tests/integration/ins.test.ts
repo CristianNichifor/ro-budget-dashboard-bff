@@ -61,7 +61,7 @@ describe("GET /api/ins/catalog", () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.metrics).toHaveLength(4);
+    expect(body.metrics).toHaveLength(3);
     expect(body.metrics[0]).toEqual({
       code: "infant-mortality",
       label: "Mortalitate infantilă",

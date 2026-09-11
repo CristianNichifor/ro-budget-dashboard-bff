@@ -64,6 +64,14 @@ export const macroRoutes: FastifyPluginAsync<{
     return result.value;
   });
 
+  app.get("/gdp-regions", async (_request, reply) => {
+    const result = await source.getGdpRegions();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
   app.get("/debt", async (_request, reply) => {
     const result = await source.getDebt();
     if (result.isErr()) {
@@ -82,6 +90,38 @@ export const macroRoutes: FastifyPluginAsync<{
 
   app.get("/demographics", async (_request, reply) => {
     const result = await source.getDemographics();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/deficit", async (_request, reply) => {
+    const result = await source.getDeficit();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/employment", async (_request, reply) => {
+    const result = await source.getEmployment();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/current-account", async (_request, reply) => {
+    const result = await source.getCurrentAccount();
+    if (result.isErr()) {
+      return reply.code(statusFor(result.error)).send(result.error);
+    }
+    return result.value;
+  });
+
+  app.get("/rates", async (_request, reply) => {
+    const result = await source.getRates();
     if (result.isErr()) {
       return reply.code(statusFor(result.error)).send(result.error);
     }
