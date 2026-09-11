@@ -1,7 +1,7 @@
 allowBuilds:
   esbuild: true
   unrs-resolver: true
-  workerd: set this to true or false
+  workerd: true
 minimumReleaseAgeExclude:
   - fastify@5.12.4
   - lint-staged@17.5.1
