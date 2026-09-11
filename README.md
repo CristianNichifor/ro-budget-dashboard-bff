@@ -27,6 +27,7 @@ Aliniat cu `hack-for-facts-eb-server` / `transparenta-eu-ins-loader`:
 | GET    | `/api/context/monetary`                    | Inflație, salariu real, serviciul datoriei                                      |
 | GET    | `/api/context/trends?metric=health-budget` | Serii temporale bugetare                                                        |
 | GET    | `/api/ins/metrics?code=infant-mortality`   | Indicatori INS (mortalitate infantilă, pensionari, pensie medie, paturi spital) |
+| GET    | `/api/ins/catalog`                         | Catalogul indicatorilor INS disponibili (P7)                                    |
 | GET    | `/api/investments/by-county`               | Investiții publice pe județe (P6)                                               |
 
 Coduri de eroare: `400 INVALID_INPUT`, `404 NOT_FOUND`, `502 UPSTREAM_UNAVAILABLE`, `500 INTERNAL`.
