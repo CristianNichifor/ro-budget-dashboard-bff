@@ -1,4 +1,4 @@
-import { ok, type Result } from "neverthrow";
+import { err, ok, type Result } from "neverthrow";
 import type { AppError } from "../../../common/errors";
 import {
   SEED_BUDGET_DESTINATIONS,
@@ -10,19 +10,39 @@ import type {
   BudgetSummary,
 } from "../../../common/types";
 import type { BudgetDataSource, BudgetInstitutions } from "../core/ports";
+import { validateBudgetYear } from "../core/years";
 
 export class StaticBudgetSource implements BudgetDataSource {
-  async getSummary(): Promise<Result<BudgetSummary, AppError>> {
+  getYears(): number[] {
+    return [SEED_BUDGET_SUMMARY.year];
+  }
+
+  async getSummary(year: string): Promise<Result<BudgetSummary, AppError>> {
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
     return ok(SEED_BUDGET_SUMMARY);
   }
 
-  async getDestinations(): Promise<Result<BudgetDestination[], AppError>> {
+  async getDestinations(
+    year: string
+  ): Promise<Result<BudgetDestination[], AppError>> {
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
     return ok(SEED_BUDGET_DESTINATIONS);
   }
 
   async getInstitutions(
+    year: string,
     category: string
   ): Promise<Result<BudgetInstitutions, AppError>> {
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
     const destination = SEED_BUDGET_DESTINATIONS.find(
       (item) => item.id === category
     );

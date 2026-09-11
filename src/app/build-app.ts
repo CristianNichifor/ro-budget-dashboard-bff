@@ -53,7 +53,10 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
 
   void app.register(budgetRoutes, {
     prefix: "/api/budget",
-    dependencies: { source: budgetSource },
+    dependencies: {
+      source: budgetSource,
+      defaultYear: config.hackForFactsYear,
+    },
   });
 
   void app.register(contextRoutes, {

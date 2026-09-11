@@ -26,14 +26,25 @@ const BudgetDestinationSchema = Type.Intersect([
   }),
 ]);
 
-const InstitutionsQuerySchema = Type.Object({
-  category: Type.String({ minLength: 1 }),
+const YearQuerySchema = Type.Object({
+  year: Type.Optional(Type.String({ pattern: "^[0-9]{4}$" })),
 });
+
+const InstitutionsQuerySchema = Type.Intersect([
+  YearQuerySchema,
+  Type.Object({
+    category: Type.String({ minLength: 1 }),
+  }),
+]);
 
 const InstitutionsResponseSchema = Type.Object({
   category: Type.String(),
   total: Type.String(),
   institutions: Type.Array(BudgetSubDestinationSchema),
+});
+
+const YearsResponseSchema = Type.Object({
+  years: Type.Array(Type.Integer()),
 });
 
 const ErrorResponseSchema = Type.Object({
@@ -50,6 +61,7 @@ const ErrorResponses = {
 
 interface BudgetRouteDependencies {
   source: BudgetDataSource;
+  defaultYear: string;
 }
 
 function statusFor(error: AppError): 400 | 404 | 500 | 502 {
@@ -68,17 +80,31 @@ function statusFor(error: AppError): 400 | 404 | 500 | 502 {
 export const budgetRoutes: FastifyPluginAsync<{
   dependencies: BudgetRouteDependencies;
 }> = async (app, options) => {
-  const { source } = options.dependencies;
+  const { source, defaultYear } = options.dependencies;
+
+  app.get(
+    "/years",
+    {
+      schema: {
+        response: { 200: YearsResponseSchema, ...ErrorResponses },
+      },
+    },
+    async (_request, reply) => {
+      return reply.send({ years: source.getYears() });
+    }
+  );
 
   app.get(
     "/summary",
     {
       schema: {
+        querystring: YearQuerySchema,
         response: { 200: BudgetSummaryResponseSchema, ...ErrorResponses },
       },
     },
-    async (_request, reply) => {
-      const result = await source.getSummary();
+    async (request, reply) => {
+      const year = (request.query as { year?: string }).year ?? defaultYear;
+      const result = await source.getSummary(year);
       if (result.isErr()) {
         return reply.code(statusFor(result.error)).send(result.error);
       }
@@ -90,14 +116,16 @@ export const budgetRoutes: FastifyPluginAsync<{
     "/destinations",
     {
       schema: {
+        querystring: YearQuerySchema,
         response: {
           200: Type.Array(BudgetDestinationSchema),
           ...ErrorResponses,
         },
       },
     },
-    async (_request, reply) => {
-      const result = await source.getDestinations();
+    async (request, reply) => {
+      const year = (request.query as { year?: string }).year ?? defaultYear;
+      const result = await source.getDestinations(year);
       if (result.isErr()) {
         return reply.code(statusFor(result.error)).send(result.error);
       }
@@ -118,7 +146,8 @@ export const budgetRoutes: FastifyPluginAsync<{
     },
     async (request, reply) => {
       const { category } = request.query as { category: string };
-      const result = await source.getInstitutions(category);
+      const year = (request.query as { year?: string }).year ?? defaultYear;
+      const result = await source.getInstitutions(year, category);
       if (result.isErr()) {
         return reply.code(statusFor(result.error)).send(result.error);
       }

@@ -10,6 +10,7 @@ import {
   buildInstitutions,
   buildSummary,
 } from "../core/analytics-mapping";
+import { availableBudgetYears, validateBudgetYear } from "../core/years";
 
 /**
  * GraphQL client for hack-for-facts-eb-server (transparenta.eu server).
@@ -183,8 +184,15 @@ async function postGraphQL(
 export class HackForFactsSource implements BudgetDataSource {
   constructor(private readonly config: AppConfig) {}
 
-  async getSummary(): Promise<Result<BudgetSummary, AppError>> {
-    const year = this.config.hackForFactsYear;
+  getYears(): number[] {
+    return availableBudgetYears();
+  }
+
+  async getSummary(year: string): Promise<Result<BudgetSummary, AppError>> {
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
 
     const result = await postGraphQL(this.config, SUMMARY_QUERY, {
       inputs: [
@@ -218,8 +226,14 @@ export class HackForFactsSource implements BudgetDataSource {
     return buildSummary(parsed.data.executionAnalytics, Number(year));
   }
 
-  async getDestinations(): Promise<Result<BudgetDestination[], AppError>> {
-    const year = this.config.hackForFactsYear;
+  async getDestinations(
+    year: string
+  ): Promise<Result<BudgetDestination[], AppError>> {
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
+
     const result = await postGraphQL(this.config, DESTINATIONS_QUERY, {
       filter: analyticsFilter(year, "ch", "total"),
       limit: DESTINATIONS_LIMIT,
@@ -243,9 +257,14 @@ export class HackForFactsSource implements BudgetDataSource {
   }
 
   async getInstitutions(
+    year: string,
     category: string
   ): Promise<Result<BudgetInstitutions, AppError>> {
-    const year = this.config.hackForFactsYear;
+    const validated = validateBudgetYear(year);
+    if (validated.isErr()) {
+      return err(validated.error);
+    }
+
     const result = await postGraphQL(this.config, INSTITUTIONS_QUERY, {
       filter: {
         ...analyticsFilter(year, "ch", "total"),

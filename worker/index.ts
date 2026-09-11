@@ -34,6 +34,7 @@ interface Sources {
 
 interface AppVariables {
   sources: Sources;
+  config: AppConfig;
 }
 
 function buildSources(config: AppConfig): Sources {
@@ -67,15 +68,22 @@ function errorReply(c: Context, error: AppError): Response {
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 app.use("/api/*", cors({ origin: "*" }), async (c, next) => {
-  c.set("sources", buildSources(loadConfig(c.env)));
+  const config = loadConfig(c.env);
+  c.set("config", config);
+  c.set("sources", buildSources(config));
   await next();
 });
 
 app.get("/health/live", (c) => c.json({ status: "ok" }));
 app.get("/health/ready", (c) => c.json({ status: "ready" }));
 
+app.get("/api/budget/years", (c) => {
+  return c.json({ years: c.get("sources").budget.getYears() });
+});
+
 app.get("/api/budget/summary", async (c) => {
-  const result = await c.get("sources").budget.getSummary();
+  const year = c.req.query("year") ?? c.get("config").hackForFactsYear;
+  const result = await c.get("sources").budget.getSummary(year);
   if (result.isErr()) {
     return errorReply(c, result.error);
   }
@@ -83,7 +91,8 @@ app.get("/api/budget/summary", async (c) => {
 });
 
 app.get("/api/budget/destinations", async (c) => {
-  const result = await c.get("sources").budget.getDestinations();
+  const year = c.req.query("year") ?? c.get("config").hackForFactsYear;
+  const result = await c.get("sources").budget.getDestinations(year);
   if (result.isErr()) {
     return errorReply(c, result.error);
   }
@@ -92,7 +101,8 @@ app.get("/api/budget/destinations", async (c) => {
 
 app.get("/api/budget/institutions", async (c) => {
   const category = c.req.query("category") ?? "";
-  const result = await c.get("sources").budget.getInstitutions(category);
+  const year = c.req.query("year") ?? c.get("config").hackForFactsYear;
+  const result = await c.get("sources").budget.getInstitutions(year, category);
   if (result.isErr()) {
     return errorReply(c, result.error);
   }

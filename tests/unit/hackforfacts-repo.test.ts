@@ -36,7 +36,7 @@ describe("HackForFactsSource", () => {
       },
     });
 
-    await new HackForFactsSource(config).getSummary();
+    await new HackForFactsSource(config).getSummary("2024");
 
     const fetchMock = vi.mocked(fetch);
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
@@ -61,7 +61,7 @@ describe("HackForFactsSource", () => {
       },
     });
 
-    const result = await new HackForFactsSource(config).getSummary();
+    const result = await new HackForFactsSource(config).getSummary("2024");
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
@@ -78,13 +78,65 @@ describe("HackForFactsSource", () => {
   it("surfaces GraphQL errors as UPSTREAM_UNAVAILABLE", async () => {
     mockFetch({ errors: [{ message: "boom" }] });
 
-    const result = await new HackForFactsSource(config).getSummary();
+    const result = await new HackForFactsSource(config).getSummary("2024");
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error.code).toBe("UPSTREAM_UNAVAILABLE");
       expect(result.error.message).toContain("boom");
     }
+  });
+
+  it("passes the requested year to the upstream filter", async () => {
+    mockFetch({
+      data: {
+        executionAnalytics: [
+          { seriesId: "revenue", data: [{ x: "2025", y: 600 }] },
+          { seriesId: "expenditure", data: [{ x: "2025", y: 700 }] },
+          { seriesId: "revenue_pct_gdp", data: [{ x: "2025", y: 30.1 }] },
+          { seriesId: "expenditure_pct_gdp", data: [{ x: "2025", y: 35.4 }] },
+        ],
+      },
+    });
+
+    const result = await new HackForFactsSource(config).getSummary("2025");
+
+    expect(result.isOk()).toBe(true);
+    const fetchMock = vi.mocked(fetch);
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+      variables: {
+        inputs: Array<{
+          filter: {
+            report_period?: { selection?: { interval?: { start?: string } } };
+          };
+        }>;
+      };
+    };
+    for (const input of body.variables.inputs) {
+      expect(input.filter.report_period?.selection?.interval?.start).toBe(
+        "2025"
+      );
+    }
+  });
+
+  it("rejects an unsupported budget year", async () => {
+    mockFetch({ data: {} });
+
+    const result = await new HackForFactsSource(config).getSummary("1999");
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error.code).toBe("INVALID_INPUT");
+    }
+  });
+
+  it("lists the supported years up to the current year", () => {
+    const years = new HackForFactsSource(config).getYears();
+    const current = new Date().getFullYear();
+
+    expect(years[0]).toBe(2020);
+    expect(years[years.length - 1]).toBe(current);
+    expect(years).toHaveLength(current - 2020 + 1);
   });
 
   it("maps aggregatedLineItems into destinations", async () => {
@@ -105,7 +157,7 @@ describe("HackForFactsSource", () => {
       },
     });
 
-    const result = await new HackForFactsSource(config).getDestinations();
+    const result = await new HackForFactsSource(config).getDestinations("2024");
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
@@ -127,7 +179,10 @@ describe("HackForFactsSource", () => {
       },
     });
 
-    const result = await new HackForFactsSource(config).getInstitutions("66");
+    const result = await new HackForFactsSource(config).getInstitutions(
+      "2024",
+      "66"
+    );
 
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {

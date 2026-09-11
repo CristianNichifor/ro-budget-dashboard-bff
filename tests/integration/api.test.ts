@@ -124,6 +124,40 @@ describe("GET /api/budget", () => {
 
     expect(response.statusCode).toBe(404);
   });
+
+  it("lists the supported years", async () => {
+    const instance = await getApp();
+    const response = await instance.inject({
+      method: "GET",
+      url: "/api/budget/years",
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(Array.isArray(body.years)).toBe(true);
+    expect(body.years).toContain(2026);
+  });
+
+  it("rejects a budget year before the supported range", async () => {
+    const instance = await getApp();
+    const response = await instance.inject({
+      method: "GET",
+      url: "/api/budget/summary?year=1999",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().code).toBe("INVALID_INPUT");
+  });
+
+  it("rejects a malformed budget year", async () => {
+    const instance = await getApp();
+    const response = await instance.inject({
+      method: "GET",
+      url: "/api/budget/summary?year=abcd",
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
 });
 
 describe("GET /api/context", () => {

@@ -13,9 +13,11 @@ export interface BudgetInstitutions {
 }
 
 export interface BudgetDataSource {
-  getSummary(): Promise<Result<BudgetSummary, AppError>>;
-  getDestinations(): Promise<Result<BudgetDestination[], AppError>>;
+  getSummary(year: string): Promise<Result<BudgetSummary, AppError>>;
+  getDestinations(year: string): Promise<Result<BudgetDestination[], AppError>>;
   getInstitutions(
+    year: string,
     category: string
   ): Promise<Result<BudgetInstitutions, AppError>>;
+  getYears(): number[];
 }
