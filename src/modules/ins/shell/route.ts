@@ -20,6 +20,16 @@ const MetricResponseSchema = Type.Object({
   ),
 });
 
+const CatalogEntrySchema = Type.Object({
+  code: Type.String(),
+  label: Type.String(),
+  unit: Type.String(),
+});
+
+const CatalogResponseSchema = Type.Object({
+  metrics: Type.Array(CatalogEntrySchema),
+});
+
 const ErrorResponseSchema = Type.Object({
   code: Type.String(),
   message: Type.String(),
@@ -74,6 +84,22 @@ export const insRoutes: FastifyPluginAsync<{
       }
 
       return result.value;
+    }
+  );
+
+  app.get(
+    "/catalog",
+    {
+      schema: {
+        response: { 200: CatalogResponseSchema, ...ErrorResponses },
+      },
+    },
+    async (_request, reply) => {
+      const result = await source.getCatalog();
+      if (result.isErr()) {
+        return reply.code(statusFor(result.error)).send(result.error);
+      }
+      return { metrics: result.value };
     }
   );
 };

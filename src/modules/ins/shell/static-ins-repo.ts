@@ -1,7 +1,7 @@
 import { ok, type Result } from "neverthrow";
 import type { AppError } from "../../../common/errors";
 import { SEED_INS_METRICS } from "../../../common/seed-data";
-import type { InsMetric } from "../core/types";
+import type { InsCatalogEntry, InsMetric } from "../core/types";
 import type { InsDataSource } from "../core/ports";
 
 export class StaticInsSource implements InsDataSource {
@@ -13,5 +13,11 @@ export class StaticInsSource implements InsDataSource {
     }
 
     return ok(metric);
+  }
+
+  async getCatalog(): Promise<Result<InsCatalogEntry[], AppError>> {
+    return ok(
+      SEED_INS_METRICS.map(({ code, label, unit }) => ({ code, label, unit }))
+    );
   }
 }

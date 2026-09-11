@@ -50,3 +50,27 @@ describe("GET /api/ins/metrics", () => {
     expect(response.json().code).toBe("NOT_FOUND");
   });
 });
+
+describe("GET /api/ins/catalog", () => {
+  it("returns the available metrics with code, label and unit", async () => {
+    const instance = await getApp();
+    const response = await instance.inject({
+      method: "GET",
+      url: "/api/ins/catalog",
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.metrics).toHaveLength(4);
+    expect(body.metrics[0]).toEqual({
+      code: "infant-mortality",
+      label: "Mortalitate infantilă",
+      unit: "la 1.000 locuitori",
+    });
+    for (const metric of body.metrics) {
+      expect(typeof metric.code).toBe("string");
+      expect(typeof metric.label).toBe("string");
+      expect(typeof metric.unit).toBe("string");
+    }
+  });
+});

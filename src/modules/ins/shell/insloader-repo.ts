@@ -2,7 +2,8 @@ import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 import type { AppConfig } from "../../../infra/config";
 import type { AppError } from "../../../common/errors";
-import type { InsMetric } from "../core/types";
+import { SEED_INS_METRICS } from "../../../common/seed-data";
+import type { InsCatalogEntry, InsMetric } from "../core/types";
 import type { InsDataSource } from "../core/ports";
 
 /**
@@ -27,6 +28,16 @@ const StatisticsResponseSchema = z.object({
 
 export class InsLoaderSource implements InsDataSource {
   constructor(private readonly config: AppConfig) {}
+
+  /**
+   * The loader serves series only, so the catalog (labels/units) comes from
+   * the local metadata seed. Replace with loader discovery once available.
+   */
+  async getCatalog(): Promise<Result<InsCatalogEntry[], AppError>> {
+    return ok(
+      SEED_INS_METRICS.map(({ code, label, unit }) => ({ code, label, unit }))
+    );
+  }
 
   async getMetric(code: string): Promise<Result<InsMetric, AppError>> {
     try {

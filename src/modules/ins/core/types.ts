@@ -9,3 +9,9 @@ export interface InsMetric {
   label: string;
   data: InsMetricPoint[];
 }
+
+export interface InsCatalogEntry {
+  code: string;
+  label: string;
+  unit: string;
+}
