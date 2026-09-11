@@ -1,6 +1,6 @@
 # ro-budget-dashboard-bff
 
-Backend-for-frontend pentru [ro-budget-dashboard](https://github.com/your-org/ro-budget-dashboard): agreghează datele bugetare (Open Budget 2026 / hack-for-facts-eb-server) cu context INS și BNR, într-un contract tipizat consumat de frontend.
+Backend-for-frontend pentru [ro-budget-dashboard](https://github.com/CristianNichifor/ro-budget-dashboard): agreghează datele bugetare (Open Budget 2026 / hack-for-facts-eb-server) cu context INS și BNR, într-un contract tipizat consumat de frontend.
 
 > **Status: P8.** Sursa implicită este `static` (seed-uri demo). Sursa `hackforfacts` servește datele live din API-ul public transparenta.eu (`https://api.transparenta.eu/graphql`) — vezi „Surse de date”.
 
