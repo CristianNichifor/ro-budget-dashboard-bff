@@ -1,10 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import type { FastifyPluginAsync } from "fastify";
-import type { Decimal } from "decimal.js";
 import type { AppError } from "../../../common/errors";
-import type { SalaryBreakdown } from "../core/types";
 import type { TaxRatesProvider } from "../core/ports";
 import { calculateSalaryBreakdown } from "../core/use-cases/calculate-salary";
+import { serializeSalaryBreakdown } from "./serialize";
 
 const SalaryQuerySchema = Type.Object({
   gross: Type.String({ minLength: 1 }),
@@ -43,34 +42,6 @@ interface SalaryRouteDependencies {
   taxRates: TaxRatesProvider;
 }
 
-const MONEY_DECIMALS = 2;
-const PERCENT_DECIMALS = 4;
-
-function toLei(value: Decimal): string {
-  return value.toDecimalPlaces(MONEY_DECIMALS).toFixed(MONEY_DECIMALS);
-}
-
-function serialize(breakdown: SalaryBreakdown) {
-  return {
-    gross: toLei(breakdown.gross),
-    cas: toLei(breakdown.cas),
-    cass: toLei(breakdown.cass),
-    incomeTax: toLei(breakdown.incomeTax),
-    employerContribution: toLei(breakdown.employerContribution),
-    estimatedVat: toLei(breakdown.estimatedVat),
-    net: toLei(breakdown.net),
-    employerCost: toLei(breakdown.employerCost),
-    stateShare: toLei(breakdown.stateShare),
-    statePercent: breakdown.statePercent
-      .toDecimalPlaces(PERCENT_DECIMALS)
-      .toFixed(PERCENT_DECIMALS),
-    entries: breakdown.entries.map((entry) => ({
-      labelKey: entry.labelKey,
-      amount: toLei(entry.amount),
-    })),
-  };
-}
-
 function statusFor(error: AppError): 400 | 500 {
   if (error.code === "INVALID_INPUT") {
     return 400;
@@ -102,7 +73,7 @@ export const salaryRoutes: FastifyPluginAsync<{
         return reply.code(statusFor(result.error)).send(result.error);
       }
 
-      return serialize(result.value);
+      return serializeSalaryBreakdown(result.value);
     }
   );
 };
