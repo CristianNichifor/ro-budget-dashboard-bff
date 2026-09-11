@@ -11,6 +11,8 @@ export interface AppConfig {
   insDataSource: "static" | "insloader";
   insLoaderBaseUrl: string;
   insLoaderTimeoutMs: number;
+  soeBaseUrl: string;
+  soeTimeoutMs: number;
 }
 
 const DEFAULT_PORT = 3000;
@@ -36,5 +38,7 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     insDataSource: env.DATA_SOURCE_INS === "insloader" ? "insloader" : "static",
     insLoaderBaseUrl: env.INS_LOADER_BASE_URL ?? "http://localhost:3002",
     insLoaderTimeoutMs: Number(env.INS_LOADER_TIMEOUT_MS ?? 3000),
+    soeBaseUrl: env.SOE_BASE_URL ?? "https://companiidestat.ro",
+    soeTimeoutMs: Number(env.SOE_TIMEOUT_MS ?? 15000),
   };
 }

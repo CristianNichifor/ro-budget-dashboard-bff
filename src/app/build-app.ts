@@ -12,6 +12,8 @@ import { investmentsRoutes } from "../modules/investments/shell/route";
 import { buildInvestmentsSource } from "../modules/investments/shell/repo";
 import { salaryRoutes } from "../modules/salary/shell/route";
 import { staticTaxRates } from "../modules/salary/shell/repo";
+import { soeRoutes } from "../modules/soe/shell/route";
+import { buildSoeSource } from "../modules/soe/shell/repo";
 
 export interface AppDependencies {
   config: AppConfig;
@@ -66,6 +68,12 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   void app.register(investmentsRoutes, {
     prefix: "/api/investments",
     dependencies: { source: investmentsSource },
+  });
+
+  const soeSource = buildSoeSource(config);
+  void app.register(soeRoutes, {
+    prefix: "/api/soe",
+    dependencies: { source: soeSource },
   });
 
   return app;

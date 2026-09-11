@@ -16,6 +16,8 @@ import type { InvestmentsSource } from "../src/modules/investments/core/ports";
 import { calculateSalaryBreakdown } from "../src/modules/salary/core/use-cases/calculate-salary";
 import { staticTaxRates } from "../src/modules/salary/shell/repo";
 import { serializeSalaryBreakdown } from "../src/modules/salary/shell/serialize";
+import { buildSoeSource } from "../src/modules/soe/shell/repo";
+import type { SoeDataSource } from "../src/modules/soe/core/ports";
 
 type Env = Record<string, string | undefined>;
 
@@ -24,6 +26,7 @@ interface Sources {
   context: ContextDataSource;
   ins: InsDataSource;
   investments: InvestmentsSource;
+  soe: SoeDataSource;
 }
 
 interface AppVariables {
@@ -36,6 +39,7 @@ function buildSources(config: AppConfig): Sources {
     context: buildContextSource(),
     ins: buildInsSource(config),
     investments: buildInvestmentsSource(config),
+    soe: buildSoeSource(config),
   };
 }
 
@@ -165,6 +169,67 @@ app.get("/api/salary/calculate", (c) => {
     return errorReply(c, result.error);
   }
   return c.json(serializeSalaryBreakdown(result.value));
+});
+
+app.get("/api/soe/summary", async (c) => {
+  const result = await c.get("sources").soe.getSummary();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/sector-trend", async (c) => {
+  const result = await c.get("sources").soe.getSectorTrend();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/by-county", async (c) => {
+  const result = await c.get("sources").soe.getByCounty();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/scatter", async (c) => {
+  const result = await c.get("sources").soe.getScatter();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/companies/:cui", async (c) => {
+  const cui = c.req.param("cui");
+  if (!/^\d{1,12}$/.test(cui)) {
+    return c.json({ code: "INVALID_INPUT", message: "invalid cui" }, 400);
+  }
+  const result = await c.get("sources").soe.getCompany(cui);
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/subsidies", async (c) => {
+  const year = c.req.query("year");
+  const result = await c.get("sources").soe.getSubsidies(year);
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/soe/listed", async (c) => {
+  const result = await c.get("sources").soe.getListed();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
 });
 
 app.notFound((c) => c.json({ code: "NOT_FOUND", message: "not found" }, 404));

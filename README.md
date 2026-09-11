@@ -29,6 +29,13 @@ Aliniat cu `hack-for-facts-eb-server` / `transparenta-eu-ins-loader`:
 | GET    | `/api/ins/metrics?code=infant-mortality`   | Indicatori INS (mortalitate infantilă, pensionari, pensie medie, paturi spital) |
 | GET    | `/api/ins/catalog`                         | Catalogul indicatorilor INS disponibili (P7)                                    |
 | GET    | `/api/investments/by-county`               | Investiții publice pe județe (P6)                                               |
+| GET    | `/api/soe/summary`                         | Companii de stat: statistici, topuri, emblematice                               |
+| GET    | `/api/soe/sector-trend`                    | Ponderea companiilor pe pierdere, 6 sectoare × 2019–2024                        |
+| GET    | `/api/soe/by-county`                       | Companii de stat pe județe (CA, profit, pierderi)                               |
+| GET    | `/api/soe/scatter`                         | Salariu vs. marjă netă per companie                                             |
+| GET    | `/api/soe/companies/:cui`                  | Fișa unei companii (finanțe, salarii, MFin, subvenții)                          |
+| GET    | `/api/soe/subsidies?year=2024\|2025`       | Subvenții locale către companiile de stat                                       |
+| GET    | `/api/soe/listed`                          | Companiile de stat listate la BVB                                               |
 
 Coduri de eroare: `400 INVALID_INPUT`, `404 NOT_FOUND`, `502 UPSTREAM_UNAVAILABLE`, `500 INTERNAL`.
 
@@ -89,6 +96,10 @@ Caveat-uri constatate pe instanța live:
 - Introspectarea GraphQL este dezactivată (maparea e verificată pe schema din repo + smoke test); unele valori ale enum-ului `ReportType` din repo dau eroare pe instanța live — live-ul pare în urma repo-ului.
 - Latenta e de ordinul secundelor la prima cerere → `HACK_FOR_FACTS_TIMEOUT_MS` implicit 20000.
 - Datele acoperă până la ~2024; nume fără diacritice în unele câmpuri.
+
+## Companii de stat (companiidestat.ro)
+
+Modulul `soe` servește datele despre companiile de stat din **API-ul public de date [companiidestat.ro](https://companiidestat.ro/date/)** (CC BY 4.0, JSON, fără cheie): statistici 2019–2024, scatter salariu × marjă, bilanțuri MFin, salarii, subvenții locale (2024–2025) și companiile listate la BVB. Endpoint-urile de mai sus expun contracte tipizate; snapshot-urile upstream sunt cache-uite în memorie (TTL 10 min). Config: `SOE_BASE_URL` / `SOE_TIMEOUT_MS` (vezi `.env.example`).
 
 ## Docker
 
