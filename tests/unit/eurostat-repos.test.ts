@@ -3,6 +3,7 @@ import { loadConfig } from "../../src/infra/config";
 import { EurostatSocietySource } from "../../src/modules/society/shell/society-repo";
 import { EurostatEnergySource } from "../../src/modules/energy/shell/eurostat-energy-repo";
 import { EurostatLabourSource } from "../../src/modules/labour/shell/eurostat-labour-repo";
+import { EurostatJusticeSource } from "../../src/modules/justice/shell/eurostat-justice-repo";
 
 const jsonStat = {
   version: "2.0",
@@ -84,6 +85,25 @@ describe("EurostatLabourSource", () => {
     expect(result.value.neet).toHaveLength(2);
     expect(result.value.youthUnemployment).toHaveLength(2);
     expect(result.value.vacancies).toHaveLength(2);
+    expect(result.value.sourceUpdated).toBe("2026-08-14");
+  });
+});
+
+describe("EurostatJusticeSource", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("aggregates homicides, prison population and police headcount", async () => {
+    stubFetch();
+    const source = new EurostatJusticeSource(loadConfig({}));
+    const result = await source.getContext();
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) {
+      return;
+    }
+    expect(result.value.homicides).toHaveLength(2);
+    expect(result.value.prison).toHaveLength(2);
+    expect(result.value.police).toHaveLength(2);
     expect(result.value.sourceUpdated).toBe("2026-08-14");
   });
 });

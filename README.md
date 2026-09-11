@@ -55,6 +55,7 @@ Aliniat cu `hack-for-facts-eb-server` / `transparenta-eu-ins-loader`:
 | GET    | `/api/society/demographics`                | Vârsta mediană + migrația netă (Eurostat)                                                    |
 | GET    | `/api/energy/context`                      | Preț electricitate gospodării, energie regenerabilă, dependență de import                    |
 | GET    | `/api/labour/context`                      | Rata NEET, șomajul tinerilor, rata locurilor vacante (Eurostat)                              |
+| GET    | `/api/justice/context`                     | Omucideri intenționate, populație carcerală, efectiv polițiști (Eurostat)                    |
 
 Coduri de eroare: `400 INVALID_INPUT`, `404 NOT_FOUND`, `502 UPSTREAM_UNAVAILABLE`, `500 INTERNAL`.
 
@@ -90,6 +91,7 @@ src/
     ├── society/  core/ (types, ports)             shell/ (Eurostat repo, route)
     ├── energy/   core/ (types, ports)             shell/ (Eurostat repo, route)
     ├── labour/   core/ (types, ports)             shell/ (Eurostat repo, route)
+    ├── justice/  core/ (types, ports)             shell/ (Eurostat repo, route)
     └── macro/    core/ (types, parsers)           shell/ (Eurostat repo, route)
 ```
 
@@ -101,13 +103,13 @@ Reguli:
 
 ## Surse de date
 
-| Sursă               | Status    | Note                                                                                                                                                                                                                                                                                                     |
-| ------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `static` (implicit) | P2 ✓      | Seed-uri demo identice cu cele din frontend                                                                                                                                                                                                                                                              |
-| `hackforfacts`      | P8 ✓      | Client GraphQL cu mapare verificată pe schema upstream: `executionAnalytics` (sumar), `aggregatedLineItems` (destinații), `entityAnalytics` (instituții). Anul se setează prin `HACK_FOR_FACTS_YEAR`.                                                                                                    |
-| MFP / data.gov.ro   | P9 ✓      | Buget adoptat: CKAN `package_show` pe dataseturile „Bugetul de stat - {an}” (2014–2025), parcare tolerantă a XML-urilor anexa 1 (BS, BASS, BSAN, BSOM), cache 24h.                                                                                                                                       |
-| Eurostat / BCE      | P11/P12 ✓ | Macro extins: deficit trimestrial GFS, ocupare, cont curent, dobânda BCE. Module: `wages` (LCI + SES + salariu real), `society` (populație + COFOG), `context` (trend sănătate COFOG), `energy` și `labour` (NEET, șomaj tineri, locuri vacante) — aceleași tipare de cache, fiecare cu `sourceUpdated`. |
-| INS / Eurostat      | P17 ✓     | Indicatori sociali live din Eurostat (`DATA_SOURCE_INS=eurostat`): mortalitate infantilă, speranța de viață, paturi de spital, beneficiari de pensii (`spr_pns_ben`). INS Tempo nu are API public curat — Eurostat e echivalentul onest. `static` rămâne fallback.                                       |
+| Sursă               | Status    | Note                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `static` (implicit) | P2 ✓      | Seed-uri demo identice cu cele din frontend                                                                                                                                                                                                                                                                                                             |
+| `hackforfacts`      | P8 ✓      | Client GraphQL cu mapare verificată pe schema upstream: `executionAnalytics` (sumar), `aggregatedLineItems` (destinații), `entityAnalytics` (instituții). Anul se setează prin `HACK_FOR_FACTS_YEAR`.                                                                                                                                                   |
+| MFP / data.gov.ro   | P9 ✓      | Buget adoptat: CKAN `package_show` pe dataseturile „Bugetul de stat - {an}” (2014–2025), parcare tolerantă a XML-urilor anexa 1 (BS, BASS, BSAN, BSOM), cache 24h.                                                                                                                                                                                      |
+| Eurostat / BCE      | P11/P12 ✓ | Macro extins: deficit trimestrial GFS, ocupare, cont curent, dobânda BCE. Module: `wages` (LCI + SES + salariu real), `society` (populație + COFOG), `context` (trend sănătate COFOG), `energy`, `labour` (NEET, șomaj tineri, locuri vacante) și `justice` (omucideri, penitenciar, polițiști) — aceleași tipare de cache, fiecare cu `sourceUpdated`. |
+| INS / Eurostat      | P17 ✓     | Indicatori sociali live din Eurostat (`DATA_SOURCE_INS=eurostat`): mortalitate infantilă, speranța de viață, paturi de spital, beneficiari de pensii (`spr_pns_ben`). INS Tempo nu are API public curat — Eurostat e echivalentul onest. `static` rămâne fallback.                                                                                      |
 
 ### Date reale: API-ul public transparenta.eu
 

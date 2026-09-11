@@ -30,6 +30,8 @@ import { buildEnergySource } from "../src/modules/energy/shell/repo";
 import type { EnergyDataSource } from "../src/modules/energy/core/ports";
 import { buildLabourSource } from "../src/modules/labour/shell/repo";
 import type { LabourDataSource } from "../src/modules/labour/core/ports";
+import { buildJusticeSource } from "../src/modules/justice/shell/repo";
+import type { JusticeDataSource } from "../src/modules/justice/core/ports";
 import type { Decimal } from "decimal.js";
 
 type Env = Record<string, string | undefined>;
@@ -46,6 +48,7 @@ interface Sources {
   society: SocietyDataSource;
   energy: EnergyDataSource;
   labour: LabourDataSource;
+  justice: JusticeDataSource;
 }
 
 interface AppVariables {
@@ -66,6 +69,7 @@ function buildSources(config: AppConfig): Sources {
     society: buildSocietySource(config),
     energy: buildEnergySource(config),
     labour: buildLabourSource(config),
+    justice: buildJusticeSource(config),
   };
 }
 
@@ -517,6 +521,14 @@ app.get("/api/energy/context", async (c) => {
 
 app.get("/api/labour/context", async (c) => {
   const result = await c.get("sources").labour.getContext();
+  if (result.isErr()) {
+    return errorReply(c, result.error);
+  }
+  return c.json(result.value);
+});
+
+app.get("/api/justice/context", async (c) => {
+  const result = await c.get("sources").justice.getContext();
   if (result.isErr()) {
     return errorReply(c, result.error);
   }

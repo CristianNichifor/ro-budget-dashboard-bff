@@ -29,6 +29,8 @@ import { buildEnergySource } from "../modules/energy/shell/repo";
 import { energyRoutes } from "../modules/energy/shell/route";
 import { buildLabourSource } from "../modules/labour/shell/repo";
 import { labourRoutes } from "../modules/labour/shell/route";
+import { buildJusticeSource } from "../modules/justice/shell/repo";
+import { justiceRoutes } from "../modules/justice/shell/route";
 
 export interface AppDependencies {
   config: AppConfig;
@@ -139,6 +141,12 @@ export function buildApp({
   void app.register(labourRoutes, {
     prefix: "/api/labour",
     dependencies: { source: labourSource },
+  });
+
+  const justiceSource = buildJusticeSource(config);
+  void app.register(justiceRoutes, {
+    prefix: "/api/justice",
+    dependencies: { source: justiceSource },
   });
 
   return app;
