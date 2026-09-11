@@ -83,8 +83,9 @@ transparenta.eu rulează deja eb-server-ul public, fără autentificare: `https:
 
 Caveat-uri constatate pe instanța live:
 
-- **Valorile diferă de execuția oficială** (2024: venituri ≈1,46 trn lei vs ≈575 mld oficial). Setul de date pare să agrege diferit (posibil dublă numărare a transferurilor) — de verificat cu echipa transparenta.eu înainte de prezentare ca fapt.
-- Introspectarea GraphQL este dezactivată (maparea e verificată pe schema din repo + smoke test).
+- **Filtrele noastre trimit `report_type: PRINCIPAL_AGGREGATED`.** Fără el, upstream-ul însumează toate tipurile de raport stocate (principal + secundar + detaliat + angajamente) și fiecare leu apare de 2–3 ori (ex. cheltuieli 2024: 2,05 trn lei cu totul, 878 mld corect). Cu filtrul activ, deficitul %PIB 2024 iese 8,8% — față de 8,65% oficial.
+- **Totalurile rămân „brute”, nu consolidate**: execuțiile la nivel de ordonator principal includ transferurile intra-bugetare, deci cheltuielile (~878 mld) și veniturile (~722 mld) ies peste execuția consolidată oficială (~752 / ~575 mld); deficitul și %PIB coincid fiindcă transferurile se anulează.
+- Introspectarea GraphQL este dezactivată (maparea e verificată pe schema din repo + smoke test); unele valori ale enum-ului `ReportType` din repo dau eroare pe instanța live — live-ul pare în urma repo-ului.
 - Latenta e de ordinul secundelor la prima cerere → `HACK_FOR_FACTS_TIMEOUT_MS` implicit 20000.
 - Datele acoperă până la ~2024; nume fără diacritice în unele câmpuri.
 

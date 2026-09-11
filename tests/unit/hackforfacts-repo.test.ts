@@ -24,6 +24,31 @@ afterEach(() => {
 });
 
 describe("HackForFactsSource", () => {
+  it("sends the principal-ordonator report type to avoid double counting", async () => {
+    mockFetch({
+      data: {
+        executionAnalytics: [
+          { seriesId: "revenue", data: [{ x: "2024", y: 600 }] },
+          { seriesId: "expenditure", data: [{ x: "2024", y: 700 }] },
+          { seriesId: "revenue_pct_gdp", data: [{ x: "2024", y: 30.1 }] },
+          { seriesId: "expenditure_pct_gdp", data: [{ x: "2024", y: 35.4 }] },
+        ],
+      },
+    });
+
+    await new HackForFactsSource(config).getSummary();
+
+    const fetchMock = vi.mocked(fetch);
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+      variables: {
+        inputs: Array<{ filter: { report_type?: string } }>;
+      };
+    };
+    for (const input of body.variables.inputs) {
+      expect(input.filter.report_type).toBe("PRINCIPAL_AGGREGATED");
+    }
+  });
+
   it("maps executionAnalytics series into a budget summary", async () => {
     mockFetch({
       data: {

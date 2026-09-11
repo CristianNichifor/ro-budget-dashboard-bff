@@ -119,6 +119,25 @@ function reportPeriod(year: string): ReportPeriod {
   };
 }
 
+/**
+ * Base analytics filter. `report_type: PRINCIPAL_AGGREGATED` selects the
+ * per-principal-ordonator execution reports; without it the upstream sums
+ * every stored report type (principal + secondary + detailed + commitments),
+ * which double/triple-counts each lei.
+ */
+function analyticsFilter(
+  year: string,
+  accountCategory: "vn" | "ch",
+  normalization: "total" | "percent_gdp"
+) {
+  return {
+    account_category: accountCategory,
+    report_period: reportPeriod(year),
+    normalization,
+    report_type: "PRINCIPAL_AGGREGATED",
+  };
+}
+
 async function postGraphQL(
   config: AppConfig,
   query: string,
@@ -166,36 +185,24 @@ export class HackForFactsSource implements BudgetDataSource {
 
   async getSummary(): Promise<Result<BudgetSummary, AppError>> {
     const year = this.config.hackForFactsYear;
-    const filterBase = {
-      report_period: reportPeriod(year),
-      normalization: "total" as const,
-    };
 
     const result = await postGraphQL(this.config, SUMMARY_QUERY, {
       inputs: [
         {
           seriesId: "revenue",
-          filter: { account_category: "vn", ...filterBase },
+          filter: analyticsFilter(year, "vn", "total"),
         },
         {
           seriesId: "expenditure",
-          filter: { account_category: "ch", ...filterBase },
+          filter: analyticsFilter(year, "ch", "total"),
         },
         {
           seriesId: "revenue_pct_gdp",
-          filter: {
-            account_category: "vn",
-            report_period: reportPeriod(year),
-            normalization: "percent_gdp",
-          },
+          filter: analyticsFilter(year, "vn", "percent_gdp"),
         },
         {
           seriesId: "expenditure_pct_gdp",
-          filter: {
-            account_category: "ch",
-            report_period: reportPeriod(year),
-            normalization: "percent_gdp",
-          },
+          filter: analyticsFilter(year, "ch", "percent_gdp"),
         },
       ],
     });
@@ -214,11 +221,7 @@ export class HackForFactsSource implements BudgetDataSource {
   async getDestinations(): Promise<Result<BudgetDestination[], AppError>> {
     const year = this.config.hackForFactsYear;
     const result = await postGraphQL(this.config, DESTINATIONS_QUERY, {
-      filter: {
-        account_category: "ch",
-        report_period: reportPeriod(year),
-        normalization: "total",
-      },
+      filter: analyticsFilter(year, "ch", "total"),
       limit: DESTINATIONS_LIMIT,
     });
     if (result.isErr()) {
@@ -245,9 +248,7 @@ export class HackForFactsSource implements BudgetDataSource {
     const year = this.config.hackForFactsYear;
     const result = await postGraphQL(this.config, INSTITUTIONS_QUERY, {
       filter: {
-        account_category: "ch",
-        report_period: reportPeriod(year),
-        normalization: "total",
+        ...analyticsFilter(year, "ch", "total"),
         functional_codes: [category],
       },
       limit: INSTITUTIONS_LIMIT,
