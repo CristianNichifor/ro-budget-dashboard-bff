@@ -7,6 +7,9 @@ export interface AppConfig {
   dataSource: "static" | "hackforfacts";
   hackForFactsBaseUrl: string;
   hackForFactsTimeoutMs: number;
+  insDataSource: "static" | "insloader";
+  insLoaderBaseUrl: string;
+  insLoaderTimeoutMs: number;
 }
 
 const DEFAULT_PORT = 3000;
@@ -27,5 +30,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     dataSource: env.DATA_SOURCE === "hackforfacts" ? "hackforfacts" : "static",
     hackForFactsBaseUrl: env.HACK_FOR_FACTS_BASE_URL ?? "http://localhost:3001",
     hackForFactsTimeoutMs: Number(env.HACK_FOR_FACTS_TIMEOUT_MS ?? 3000),
+    insDataSource: env.DATA_SOURCE_INS === "insloader" ? "insloader" : "static",
+    insLoaderBaseUrl: env.INS_LOADER_BASE_URL ?? "http://localhost:3002",
+    insLoaderTimeoutMs: Number(env.INS_LOADER_TIMEOUT_MS ?? 3000),
   };
 }

@@ -6,6 +6,8 @@ import { buildBudgetSource } from "../modules/budget/shell/repo";
 import { budgetRoutes } from "../modules/budget/shell/route";
 import { contextRoutes } from "../modules/context/shell/route";
 import { buildContextSource } from "../modules/context/shell/repo";
+import { buildInsSource } from "../modules/ins/shell/repo";
+import { insRoutes } from "../modules/ins/shell/route";
 import { salaryRoutes } from "../modules/salary/shell/route";
 import { staticTaxRates } from "../modules/salary/shell/repo";
 
@@ -33,6 +35,7 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
 
   const budgetSource = buildBudgetSource(config);
   const contextSource = buildContextSource();
+  const insSource = buildInsSource(config);
 
   void app.register(salaryRoutes, {
     prefix: "/api/salary",
@@ -47,6 +50,11 @@ export function buildApp({ config }: AppDependencies): FastifyInstance {
   void app.register(contextRoutes, {
     prefix: "/api/context",
     dependencies: { source: contextSource },
+  });
+
+  void app.register(insRoutes, {
+    prefix: "/api/ins",
+    dependencies: { source: insSource },
   });
 
   return app;
