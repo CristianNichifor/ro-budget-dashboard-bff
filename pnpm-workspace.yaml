@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - fastify@5.12.4
+  - lint-staged@17.5.1
+  - zod@4.6.2

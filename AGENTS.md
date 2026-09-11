@@ -1,0 +1,22 @@
+# AGENTS.md
+
+Convenții pentru `ro-budget-dashboard-bff` (aliniate cu hack-for-facts-eb-server).
+
+## Comenzi
+
+- `pnpm dev` — tsx watch (necesită `.env`)
+- `pnpm check` — typecheck + lint + test + format:check
+- `pnpm test` — vitest (unit core + integration via `app.inject`)
+
+## Reguli
+
+1. **Functional Core / Imperative Shell**: `modules/*/core` = funcții pure (`decimal.js`, `neverthrow Result`, fără I/O, fără throw); `modules/*/shell` = adaptoare (route-uri Fastify, repo-uri de date).
+2. **No floats**: banii sunt `Decimal` în core și `string` în JSON. Serializare doar în shell (lei 2 zecimale, procente 4).
+3. **Porturi peste implementări**: sursele de date implementează `*DataSource`; alege sursa prin `DATA_SOURCE` în config.
+4. **TypeBox** pentru contractele HTTP; erorile mapate în coduri: 400/404/502/500.
+5. **Conventional Commits** + Husky (lint-staged + commitlint).
+
+## Convenții Fastify
+
+- `response` schema declară TOATE codurile posibile (altfel `reply.code()` nu tipizează).
+- Teste: `buildApp({ config })` + `app.inject()` — nu porni socket-ul în teste.
