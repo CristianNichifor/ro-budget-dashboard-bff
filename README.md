@@ -1,5 +1,7 @@
 # ro-budget-dashboard-bff
 
+Contributor setup and checks: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Backend-for-frontend pentru [ro-budget-dashboard](https://github.com/CristianNichifor/ro-budget-dashboard): agreghează datele bugetare (Open Budget 2026 / hack-for-facts-eb-server) cu context INS și Eurostat/BCE, într-un contract tipizat consumat de frontend.
 
 > **Status: P36.** Sursa implicită este `static` (seed-uri demo). Sursa `hackforfacts` servește datele live din API-ul public transparenta.eu (`https://api.transparenta.eu/graphql`) — vezi „Surse de date”. Module live: buget adoptat (MFP/data.gov.ro), macro extins (Eurostat/BCE), wages (context, estimare lunară, salariu real), context (trend sănătate COFOG), society, INS (Eurostat), energy și labour. Fiecare răspuns include `sourceUpdated` (data ultimei revizii Eurostat).

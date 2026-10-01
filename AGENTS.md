@@ -25,12 +25,17 @@ Convenții pentru `ro-budget-dashboard-bff` (aliniate cu hack-for-facts-eb-serve
 - `response` schema declară TOATE codurile posibile (altfel `reply.code()` nu tipizează).
 - Teste: `buildApp({ config })` + `app.inject()` — nu porni socket-ul în teste.
 
+## Contribution workflow
 
-## How this repo is gated
-
-- `dev` is the default branch and where work lands. Pull requests are required, and **no status check is required yet**.
-- `main` is production. It is restricted: only an admin can advance it, so an agent can open a pull request against it but cannot merge one.
-- This repo ships Cloudflare (Workers or Pages) via wrangler. That fires on a merge to `main`, which is the restricted branch — so an agent's work reaching `dev` deploys nothing.
-
-*(Appended from measured repository settings. Branch rules are enforced by
-GitHub; this section describes them, it does not create them.)*
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for credential-free setup and exact checks.
+- Target `dev`. Agents must never merge any PR (including `dev`) or deploy,
+  even when their credentials could bypass GitHub rules. Maintainers review releases.
+- CI exposes `verify`, requiring every correctness job to succeed. Publishing and
+  deployment are separate; this document does not configure GitHub branch rules.
+- Personal worktrees: `wt new <name> origin/dev`, under `<repo>/.worktrees/<name>`.
+  Outside contributors without `wt` can use a separate clone and a feature branch.
+- Keep Conventional Commits concise, imperative and lower case; do not bypass hooks.
+- Preserve decimal strings at the HTTP boundary. Coordinate fixture changes with
+  the companion repo; never refresh fixtures from production data.
+- Edit source and checked-in fixtures; do not commit `dist/`, `coverage/`,
+  `node_modules/`, `.env`, Playwright reports or Wrangler output.
